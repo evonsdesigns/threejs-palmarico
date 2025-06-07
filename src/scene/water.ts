@@ -34,7 +34,7 @@ export class WaterScene {
     }
 
     public init() {
-        const waterGeometry = new THREE.PlaneGeometry(512, 512, 64, 64);
+        const waterGeometry = new THREE.PlaneGeometry(1024, 1024, 64, 64);
         this.water = new Water(waterGeometry, {
             textureWidth: 512,
             textureHeight: 512,

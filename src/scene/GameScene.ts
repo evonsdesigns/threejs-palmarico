@@ -10,11 +10,11 @@ import GameEntity from "../entities/GameEntity";
 import GameMap from "../map/GameMap";
 import ResourceManager from "../utils/ResourceManager";
 import { MapControls } from "three/examples/jsm/Addons";
-import { ViewportGizmo } from "three-viewport-gizmo";
 import { WaterScene } from './water';
 import { createCamera } from "./camera";
 import { SkySunController } from './SkySunController';
-import Building from "../entities/Building";
+import House1 from "../entities/house1";
+import { createMapControls } from "./controls";
 
 class GameScene {
   private static _instance = new GameScene();
@@ -26,7 +26,6 @@ class GameScene {
   private _renderer: WebGLRenderer;
   private _camera: THREE.OrthographicCamera;
   private _controls: MapControls;
-  private _gizmo: ViewportGizmo;
   private _skySun: SkySunController;
   private _gameMap: GameMap;
   private _sunTime = 0;
@@ -59,20 +58,10 @@ class GameScene {
     targetElement.appendChild(this._renderer.domElement);
     this._camera = createCamera();
 
-
-    // add orbit controls
-    this._controls = new MapControls(this._camera, this._renderer.domElement);
-    this._controls.maxPolarAngle = Math.PI * 0.495;
-    this._controls.target.set(0, 10, 0);
-    this._controls.minDistance = 20.0;
-    this._controls.maxDistance = 200.0;
-    this._controls.enableRotate = false;
-    this._controls.update();
-
-    // add viewport gizmo
-    this._gizmo = new ViewportGizmo(this._camera, this._renderer);
-    this._gizmo.attachControls(this._controls);
-
+    this._controls = createMapControls(
+      this._camera,
+      this._renderer
+    );
     this._skySun = new SkySunController(this._scene, this._renderer);
 
     const waterScene = new WaterScene(
@@ -89,7 +78,7 @@ class GameScene {
     window.addEventListener("resize", this.resize, false);
 
     // add the game map
-    this._gameMap = new GameMap(new Vector3(0, 0, 0), 512);
+    this._gameMap = new GameMap(new Vector3(0, 0, 0), 1024);
     this._gameEntities.push(this._gameMap);
 
     const placeBtn = document.getElementById('build');
@@ -112,7 +101,7 @@ class GameScene {
     this._renderer.setSize(this._width, this._height);
     this._camera.aspect = this._width / this._height;
     this._camera.updateProjectionMatrix();
-    this._gizmo.update();
+    this._controls.update();
   };
 
   public load = async () => {
@@ -134,7 +123,7 @@ class GameScene {
     requestAnimationFrame(this.render);
     this._renderer.render(this._scene, this._camera);
     this._controls.update();
-    this._gizmo.update();
+    // this._gizmo.update();
 
     if (this.lastElevation < 1) {
       this._sunTime += 0.001;
@@ -145,10 +134,6 @@ class GameScene {
 
 
     const azimuth = (this._sunTime * 30) % 360; // Slowly rotate azimuth
-
-    //console.log(`Sun Position - Elevation: ${elevation}, Azimuth: ${azimuth}`);
-    // Update the sky sun parameters  
-
     this._skySun.setParameters(elevation, azimuth);
     this._skySun.updateFade(elevation);
     this.lastElevation = elevation
@@ -175,8 +160,8 @@ class GameScene {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, this._camera);
 
-    // Assume your ground is at y = 0
-    const groundY = 0;
+    // Use the controls' target for the ground plane height
+    const groundY = this._controls.target.y;
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -groundY);
     const intersection = new THREE.Vector3();
     raycaster.ray.intersectPlane(plane, intersection);
@@ -187,7 +172,7 @@ class GameScene {
     const y = this._gameMap.getHeightAt(x, z); // <-- get height from map
 
     const buildingPosition = new THREE.Vector3(x, y, z);
-    const building = new Building(buildingPosition);
+    const building = new House1(buildingPosition);
     this._scene.add(building.mesh);
     this._gameEntities.push(building);
   };

@@ -1,4 +1,5 @@
 import { Texture, TextureLoader } from "three";
+import { importBuildingAssets } from "../scene/load-building-assets";
 
 class ResourceManager {
   private static _instance = new ResourceManager();
@@ -15,6 +16,8 @@ class ResourceManager {
     // create a unique texture loader
     const textureLoader = new TextureLoader();
     await this.loadGroundTextures(textureLoader);
+
+    await importBuildingAssets();
   };
 
   // method for ground textures loading

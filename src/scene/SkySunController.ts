@@ -10,7 +10,6 @@ export class SkySunController {
     private scene: THREE.Scene;
     private renderer: THREE.WebGLRenderer;
     private parameters = { elevation: 2, azimuth: 180 };
-    public sunMesh: THREE.Mesh; // <-- Add this property to your class
 
     constructor(scene: THREE.Scene, renderer: THREE.WebGLRenderer) {
         this.scene = scene;
@@ -33,19 +32,6 @@ export class SkySunController {
         this.sunlight.position.copy(this.sun.clone().multiplyScalar(1000));
      
         this.scene.add(this.sunlight);
-
-        // Add this code to create the sun mesh
-        const sunGeometry = new THREE.SphereGeometry(20, 32, 32); // Adjust size as needed
-        const sunMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0xffffee, 
-            emissive: 0xffffee, 
-            transparent: true, // Enable transparency
-            opacity: 1 
-        });
-        this.sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
-        this.sunMesh.layers.set(0); // Make sure it's rendered in the main layer
-        this.scene.add(this.sunMesh);
-
         this.updateSun();
     }
 
@@ -69,10 +55,6 @@ export class SkySunController {
         this.sunlight.target.updateMatrixWorld();
 
         this.sky.material.uniforms['sunPosition'].value.copy(this.sun);
-
-        // Update the sun mesh position
-        const sunDistance = 5000; // Place the sun far away
-        this.sunMesh.position.copy(this.sun.clone().multiplyScalar(sunDistance));
     }
 
     public getSunDirection() {
@@ -86,14 +68,7 @@ export class SkySunController {
         fade = Math.max(0, Math.min(1, fade)); // Clamp between 0 and 1
 
         // Fade sunlight intensity
-        this.sunlight.intensity = 1.2 * fade;
-
-        // Fade sun mesh
-        if (this.sunMesh) {
-            this.sunMesh.material.opacity = fade;
-            this.sunMesh.visible = fade > 0.01;
-        }
-
+        this.sunlight.intensity = 0.6 * fade;
         // Fade sky parameters for night
         if (fade === 0) {
             this.uniforms.turbidity.value = 2;
