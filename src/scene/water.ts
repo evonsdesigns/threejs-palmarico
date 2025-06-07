@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 import { Water } from 'three/examples/jsm/objects/Water.js';
-import { Sky } from 'three/examples/jsm/objects/Sky.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { SkySunController } from './SkySunController';
@@ -12,12 +10,9 @@ export class WaterScene {
     private camera: THREE.PerspectiveCamera;
     private scene: THREE.Scene;
     private renderer: THREE.WebGLRenderer;
-    private controls: OrbitControls;
     private water: any;
     private clock: THREE.Clock;
     private delta: number;
-    private boxes: THREE.Mesh[];
-    private numBoxes: number;
 
     private skySun: SkySunController;
 
@@ -27,64 +22,15 @@ export class WaterScene {
         C: { direction: 60, steepness: 0, wavelength: 15 },
     };
 
-    constructor(containerId: string = 'container', camera, renderer, controls, scene, skySun: SkySunController) {
+    constructor(containerId: string = 'container', camera, renderer, scene, skySun: SkySunController) {
         this.container = document.getElementById(containerId)!;
         this.stats = new Stats();
         this.scene = scene;
         this.clock = new THREE.Clock();
         this.delta = 0;
-        this.boxes = [];
-        this.numBoxes = 10;
-
         this.camera = camera;
         this.renderer = renderer;
-        this.controls = controls;
         this.skySun = skySun;
-    }
-
-    private getWaveInfo(x: number, z: number, time: number) {
-        const pos = new THREE.Vector3();
-        const tangent = new THREE.Vector3(1, 0, 0);
-        const binormal = new THREE.Vector3(0, 0, 1);
-        Object.keys(this.waves).forEach((wave) => {
-            const w = this.waves[wave];
-            const k = (Math.PI * 2) / w.wavelength;
-            const c = Math.sqrt(9.8 / k);
-            const d = new THREE.Vector2(
-                Math.sin((w.direction * Math.PI) / 180),
-                -Math.cos((w.direction * Math.PI) / 180)
-            );
-            const f = k * (d.dot(new THREE.Vector2(x, z)) - c * time);
-            const a = w.steepness / k;
-
-            pos.x += d.y * (a * Math.cos(f));
-            pos.y += a * Math.sin(f);
-            pos.z += d.x * (a * Math.cos(f));
-
-            tangent.x += -d.x * d.x * (w.steepness * Math.sin(f));
-            tangent.y += d.x * (w.steepness * Math.cos(f));
-            tangent.z += -d.x * d.y * (w.steepness * Math.sin(f));
-
-            binormal.x += -d.x * d.y * (w.steepness * Math.sin(f));
-            binormal.y += d.y * (w.steepness * Math.cos(f));
-            binormal.z += -d.y * d.y * (w.steepness * Math.sin(f));
-        });
-
-        const normal = binormal.cross(tangent).normalize();
-
-        return { position: pos, normal: normal };
-    }
-
-    private updateBoxes(delta: number) {
-        const t = this.water.material.uniforms['time'].value;
-        this.boxes.forEach((b) => {
-            const waveInfo = this.getWaveInfo(b.position.x, b.position.z, t);
-            b.position.y = waveInfo.position.y;
-            const quat = new THREE.Quaternion().setFromEuler(
-                new THREE.Euler(waveInfo.normal.x, waveInfo.normal.y, waveInfo.normal.z)
-            );
-            b.quaternion.rotateTowards(quat, delta * 0.5);
-        });
     }
 
     public init() {
@@ -144,10 +90,6 @@ export class WaterScene {
         skyUniforms['mieCoefficient'].value = 0.005;
         skyUniforms['mieDirectionalG'].value = 0.8;
 
-        const parameters = {
-            elevation: 2,
-            azimuth: 180,
-        };
         const updateWaterSun = () => {
             this.water.material.uniforms['sunDirection'].value.copy(this.skySun.getSunDirection());
         };
@@ -251,7 +193,6 @@ export class WaterScene {
         requestAnimationFrame(this.animate);
         this.delta = this.clock.getDelta();
         this.water.material.uniforms['time'].value += this.delta;
-        this.updateBoxes(this.delta);
         this.render();
         this.stats.update();
     };

@@ -9,7 +9,7 @@ import * as THREE from "three";
 import GameEntity from "../entities/GameEntity";
 import GameMap from "../map/GameMap";
 import ResourceManager from "../utils/ResourceManager";
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { MapControls } from "three/examples/jsm/Addons";
 import { ViewportGizmo } from "three-viewport-gizmo";
 import { WaterScene } from './water';
 import { createCamera } from "./camera";
@@ -24,8 +24,8 @@ class GameScene {
   private _width: number;
   private _height: number;
   private _renderer: WebGLRenderer;
-  private _camera: PerspectiveCamera;
-  private _controls: OrbitControls;
+  private _camera: THREE.OrthographicCamera;
+  private _controls: MapControls;
   private _gizmo: ViewportGizmo;
   private _skySun: SkySunController;
   private _gameMap: GameMap;
@@ -61,7 +61,7 @@ class GameScene {
 
 
     // add orbit controls
-    this._controls = new OrbitControls(this._camera, this._renderer.domElement);
+    this._controls = new MapControls(this._camera, this._renderer.domElement);
     this._controls.maxPolarAngle = Math.PI * 0.495;
     this._controls.target.set(0, 10, 0);
     this._controls.minDistance = 20.0;
@@ -79,7 +79,6 @@ class GameScene {
       'app',
       this._camera,
       this._renderer,
-      this._controls,
       this._scene,
       this._skySun
     );
@@ -151,35 +150,8 @@ class GameScene {
     // Update the sky sun parameters  
 
     this._skySun.setParameters(elevation, azimuth);
+    this._skySun.updateFade(elevation);
     this.lastElevation = elevation
-
-    // --- NIGHT/DAY FADE LOGIC ---
-    const fadeStart = 5;   // Elevation where fading starts
-    const fadeEnd = 15;    // Elevation where sun is fully visible
-    let fade = (elevation - fadeStart) / (fadeEnd - fadeStart);
-    fade = Math.max(0, Math.min(1, fade)); // Clamp between 0 and 1
-
-    // Fade sunlight intensity
-    this._skySun.sunlight.intensity = 1.2 * fade;
-
-    // Fade sun mesh
-    if (this._skySun.sunMesh) {
-      this._skySun.sunMesh.material.opacity = fade;
-      this._skySun.sunMesh.visible = fade > 0.01; // Hide when fully faded out
-    }
-
-    // Fade sky parameters for night
-    if (fade === 0) {
-      this._skySun.uniforms.turbidity.value = 2;
-      this._skySun.uniforms.rayleigh.value = 0.2;
-      this._skySun.uniforms.mieCoefficient.value = 0.001;
-      this._skySun.uniforms.mieDirectionalG.value = 0.1;
-    } else {
-      this._skySun.uniforms.turbidity.value = 10;
-      this._skySun.uniforms.rayleigh.value = 2;
-      this._skySun.uniforms.mieCoefficient.value = 0.005;
-      this._skySun.uniforms.mieDirectionalG.value = 0.8;
-    }
   };
 
   public enableBuildingPlacement() {

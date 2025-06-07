@@ -78,4 +78,33 @@ export class SkySunController {
     public getSunDirection() {
         return this.sun.clone().normalize();
     }
+
+    public updateFade(elevation: number): void {
+        const fadeStart = 5;   // Elevation where fading starts
+        const fadeEnd = 15;    // Elevation where sun is fully visible
+        let fade = (elevation - fadeStart) / (fadeEnd - fadeStart);
+        fade = Math.max(0, Math.min(1, fade)); // Clamp between 0 and 1
+
+        // Fade sunlight intensity
+        this.sunlight.intensity = 1.2 * fade;
+
+        // Fade sun mesh
+        if (this.sunMesh) {
+            this.sunMesh.material.opacity = fade;
+            this.sunMesh.visible = fade > 0.01;
+        }
+
+        // Fade sky parameters for night
+        if (fade === 0) {
+            this.uniforms.turbidity.value = 2;
+            this.uniforms.rayleigh.value = 0.2;
+            this.uniforms.mieCoefficient.value = 0.001;
+            this.uniforms.mieDirectionalG.value = 0.1;
+        } else {
+            this.uniforms.turbidity.value = 10;
+            this.uniforms.rayleigh.value = 2;
+            this.uniforms.mieCoefficient.value = 0.005;
+            this.uniforms.mieDirectionalG.value = 0.8;
+        }
+    }
 }

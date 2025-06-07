@@ -18,8 +18,6 @@ function clampCameraDistance(camera: THREE.Camera, center: THREE.Vector3, min: n
 }
 
 function setCameraSpherical(camera: THREE.Camera, center: THREE.Vector3, radius: number, azimuth: number, elevation: number) {
-    // azimuth: rotation around Y axis (in radians)
-    // elevation: angle from XZ plane up (in radians)
     camera.position.x = center.x + radius * Math.cos(elevation) * Math.sin(azimuth);
     camera.position.y = center.y + radius * Math.sin(elevation);
     camera.position.z = center.z + radius * Math.cos(elevation) * Math.cos(azimuth);
@@ -27,14 +25,17 @@ function setCameraSpherical(camera: THREE.Camera, center: THREE.Vector3, radius:
 }
 
 export function createCamera() {
-    const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
+    const aspect = window.innerWidth / window.innerHeight;
+    const d = 40; // zoom level
+
+    const camera = new THREE.OrthographicCamera(
+        -d * aspect, d * aspect,   // left, right
+        d, -d,                     // top, bottom
         0.1,
         1000
     );
 
-    const center = new THREE.Vector3(0, 0, 0);
+    let center = new THREE.Vector3(0, 0, 0);
     let radius = 70;
     let azimuth = Math.PI / 4; // 45 degrees
     const elevation = Math.PI / 4; // 45 degrees
@@ -43,18 +44,34 @@ export function createCamera() {
 
     camera.up.set(0, 1, 0);
 
-    clampCameraDistance(camera, center, minDistance, maxDistance);
-
     window.addEventListener('keydown', (event) => {
-        if (event.key === 'r' || event.key === 'R') {
-            // Calculate current radius (zoom level) before rotating
-            const camVec = camera.position.clone().sub(center);
-            radius = camVec.length();
 
-            azimuth += Math.PI / 2;
-            setCameraSpherical(camera, center, radius, azimuth, elevation);
-            clampCameraDistance(camera, center, minDistance, maxDistance);
+        switch (event.key) {
+            case 'ArrowUp':
+                break;
+            case 'ArrowDown':
+                break;
+            case 'ArrowLeft':
+                break;
+            case 'ArrowRight':
+                break;
+            case 'r':
+            case 'R':
+                {
+                    camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+                }
+                break;
         }
+    });
+
+    // Handle resize for orthographic camera
+    window.addEventListener('resize', () => {
+        const aspect = window.innerWidth / window.innerHeight;
+        camera.left = -d * aspect;
+        camera.right = d * aspect;
+        camera.top = d;
+        camera.bottom = -d;
+        camera.updateProjectionMatrix();
     });
 
     return camera;
