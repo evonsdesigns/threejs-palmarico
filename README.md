@@ -1,5 +1,6 @@
-# Banana Republic Sim
-
+# Palmarico
+* República de Palmarico 
+* "Por la Sombra y el Sol"
 
 # Todo
 Textures from OpenGameArt

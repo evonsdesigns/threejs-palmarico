@@ -71,7 +71,7 @@ export class SkySunController {
         this.sky.material.uniforms['sunPosition'].value.copy(this.sun);
 
         // Update the sun mesh position
-        const sunDistance = 4000; // Place the sun far away
+        const sunDistance = 5000; // Place the sun far away
         this.sunMesh.position.copy(this.sun.clone().multiplyScalar(sunDistance));
     }
 
