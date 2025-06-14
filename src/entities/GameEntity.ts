@@ -9,11 +9,13 @@ abstract class GameEntity {
 
   constructor(position: Vector3) {
     this._position = position;
-    this._mesh.position.set(
-      this._position.x,
-      this._position.y,
-      this._position.z
-    );
+    this._mesh.position.setY(position.y);
+    // this seems to be causing issues with the actual positioning
+    // this._mesh.position.set(
+    //   this._position.x,
+    //   this._position.y,
+    //   this._position.z
+    // );
   }
 
   // methods

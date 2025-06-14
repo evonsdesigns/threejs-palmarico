@@ -1,6 +1,5 @@
 import {
   HemisphereLight,
-  PerspectiveCamera,
   Scene,
   Vector3,
   WebGLRenderer,
@@ -15,6 +14,8 @@ import { createCamera } from "./camera";
 import { SkySunController } from './SkySunController';
 import House1 from "../entities/house1";
 import { createMapControls } from "./controls";
+import HouseTenant from "../entities/HouseTenant";
+
 
 class GameScene {
   private static _instance = new GameScene();
@@ -31,13 +32,11 @@ class GameScene {
   private _sunTime = 0;
   public lastElevation = 0;
   private isBuildingPlacementEnabled = false;
-
-  // three js scene
   private readonly _scene = new Scene();
-
-  // game entities array
   private _gameEntities: GameEntity[] = [];
   private _placingBuilding = false;
+  private _ghostBuilding: House1 | null = null;
+  private _buildingTypeChoice = 'house1'; // Default building type
 
   private constructor() {
     this._width = window.innerWidth;
@@ -93,7 +92,41 @@ class GameScene {
         }
       });
     }
+
+    document.getElementById('build-house')?.addEventListener('click', () => {
+      this._buildingTypeChoice = 'house1';
+      this.updateGhostBuilding();
+  });
+    document.getElementById('build-tenant')?.addEventListener('click', () => {
+      this._buildingTypeChoice = 'tenant';
+     this.updateGhostBuilding();
+   });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'b') {
+        console.log("Enabling building placement from shortcut B");
+        if (!this.isBuildingPlacementEnabled) {
+          this.isBuildingPlacementEnabled = true;
+          this.enableBuildingPlacement();
+        } else {
+          console.log("disabling building placement from shortcut B");
+          this.isBuildingPlacementEnabled = false;
+          this.disableBuildingPlacement();
+        }
+      }
+    });
   }
+
+  private getBuildingType = () => {
+    switch (this._buildingTypeChoice) {
+      case 'house1':
+        return House1;
+      case 'tenant':
+        return HouseTenant;
+      default:
+        console.warn(`Unknown building type: ${this._buildingTypeChoice}`);
+        return House1; // Default to House1 if unknown
+    }
+  };
 
   private resize = () => {
     this._width = window.innerWidth;
@@ -123,7 +156,6 @@ class GameScene {
     requestAnimationFrame(this.render);
     this._renderer.render(this._scene, this._camera);
     this._controls.update();
-    // this._gizmo.update();
 
     if (this.lastElevation < 1) {
       this._sunTime += 0.001;
@@ -136,22 +168,50 @@ class GameScene {
     const azimuth = (this._sunTime * 30) % 360; // Slowly rotate azimuth
     this._skySun.setParameters(elevation, azimuth);
     this._skySun.updateFade(elevation);
-    this.lastElevation = elevation
+    this.lastElevation = elevation;
   };
+
+  // public update ghost building
+  public updateGhostBuilding() {
+    // remove the existing ghost building mesh if it exists
+    if (this._ghostBuilding) {
+      this._scene.remove(this._ghostBuilding.mesh);
+    }
+    const SelectedBuilding = this.getBuildingType();
+
+    console.log('bldg type:', this._buildingTypeChoice);
+
+    this._ghostBuilding = new SelectedBuilding(new THREE.Vector3(0, 0, 0));
+    this._ghostBuilding.mesh.traverse((child: any) => {
+      if (child.isMesh) {
+        child.material = child.material.clone();
+        child.material.transparent = true;
+        child.material.opacity = 0.5;
+        child.material.color.set(0xffff00);
+      }
+    });
+    this._scene.add(this._ghostBuilding.mesh);
+  }
 
   public enableBuildingPlacement() {
     this._placingBuilding = true;
     window.addEventListener('pointerdown', this._onPointerDown);
+    window.addEventListener('pointermove', this._onPointerMove);
+    this.updateGhostBuilding();
   }
 
   public disableBuildingPlacement() {
     this._placingBuilding = false;
     window.removeEventListener('pointerdown', this._onPointerDown);
+    window.removeEventListener('pointermove', this._onPointerMove);
+    // Remove ghost building
+    if (this._ghostBuilding) {
+      this._scene.remove(this._ghostBuilding.mesh);
+      this._ghostBuilding = null;
+    }
   }
 
-  private _onPointerDown = (event: PointerEvent) => {
-    if (!this._placingBuilding) return;
-
+  private getMouseXYZ = (event: MouseEvent) => {
     // Convert screen coordinates to world coordinates
     const mouse = new THREE.Vector2(
       (event.clientX / this._width) * 2 - 1,
@@ -166,15 +226,36 @@ class GameScene {
     const intersection = new THREE.Vector3();
     raycaster.ray.intersectPlane(plane, intersection);
 
-    // Place a building at the intersection point
-    const x = intersection.x;
-    const z = intersection.z;
-    const y = this._gameMap.getHeightAt(x, z); // <-- get height from map
+    // Offset the ghost building to the right and down
+    const offsetX = 15; // increase this value for more rightward offset
+    const offsetZ = 15; // increase this value for more downward offset
+
+    const x = intersection.x + offsetX;
+    const z = intersection.z + offsetZ;
+    const y = this._gameMap.getHeightAt(x, z);
+
+    return { x, y, z };
+  }
+
+
+  private _onPointerMove = (event: PointerEvent) => {
+    if (!this._placingBuilding || !this._ghostBuilding) return;
+    const { x, y, z } = this.getMouseXYZ(event);
+    this._ghostBuilding.mesh.position.set(x, y, z);
+  };
+
+  private _onPointerDown = (event: PointerEvent) => {
+    if (!this._placingBuilding) return;
+    const { x, y, z } = this.getMouseXYZ(event);
+    const SelectedBuilding = this.getBuildingType();
+
 
     const buildingPosition = new THREE.Vector3(x, y, z);
-    const building = new House1(buildingPosition);
+    console.log("Placing building at:", buildingPosition);
+    const building = new SelectedBuilding(buildingPosition);
     this._scene.add(building.mesh);
     this._gameEntities.push(building);
+    //this._gameMap.flattenTerrain(x, z, 5);
   };
 }
 

@@ -9,7 +9,7 @@ export default class House1 extends GameEntity {
 
         model.position.copy(position);
         model.scale.set(10, 10, 10);
-        model.position.y = 1; 
+        model.position.y = 1;
         this._mesh.add(model);
     }
 }

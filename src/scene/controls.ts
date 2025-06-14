@@ -6,7 +6,7 @@ export function createMapControls(camera: Camera, renderer: Renderer) {
     controls.maxPolarAngle = Math.PI * 0.495;
     controls.target.set(0, -10, 0);
     controls.maxZoom = 10.0;
-    controls.minZoom = 0.4;
+    controls.minZoom = 0.2;
     controls.enableRotate = false;
 
     window.addEventListener('keydown', (event) => {

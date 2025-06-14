@@ -1,0 +1,7 @@
+I believe 1 was the best of the series and I hope the newcomers to the franchise take the time to get their asses whipped by playing 1. There's a satisfying level of difficulty that permits even a long time veteran to lose nearly any mission.
+
+Making money is rarely a problem but when that bank account hits zero you won't be taking out any loans like in future versions. Happiness is incredibly difficult to manage and as such I begin most maps with a clinic and church as soon as possible. You'll find no water treatment plant or other such structures so pollution quickly becomes an issue on an industrialized island. Fountains will help with beauty and there's an edict to limit pollution from factories but even with these at your disposal you'll find it polluted and as a result negatively influencing the happiness of the people.
+
+The coups are frequent and fun to watch. Once they start it's usually over for me since I rarely over-militarize.
+
+I can't say I have a strategy for winning since I still lose about half of the missions I start even though I've been playing Tropico 1 since it launched. It's an amazing game and I honestly believe that if each person was only allowed to own one game for the rest of their lives mine would be Tropico 1. The replay value is extremely high. If you don't already have it I can't recommend it enough.

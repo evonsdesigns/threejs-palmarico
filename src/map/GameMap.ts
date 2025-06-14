@@ -63,6 +63,26 @@ class GameMap extends GameEntity {
     if (i < 0 || i >= this._size || j < 0 || j >= this._size) return 0;
     return this.getHeight(i, j);
   }
+  public flattenTerrain(x: number, z: number, radius: number): void {
+    const halfSize = this._size / 2;
+    const startX = Math.max(0, Math.floor(x - radius + halfSize));
+    const endX = Math.min(this._size, Math.ceil(x + radius + halfSize));
+    const startZ = Math.max(0, Math.floor(z - radius + halfSize));
+    const endZ = Math.min(this._size, Math.ceil(z + radius + halfSize));
+
+    const position = this._mesh.geometry.attributes.position;
+    const flattenHeight = this.getHeightAt(x, z); // Use the building's height
+
+    for (let i = startX; i < endX; i++) {
+      for (let j = startZ; j < endZ; j++) {
+        const idx = i * this._size + j;
+        position.setZ(idx, flattenHeight);
+      }
+    }
+
+    position.needsUpdate = true;
+    this._mesh.geometry.computeVertexNormals();
+  }
 }
 
 export default GameMap;
