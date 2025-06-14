@@ -1,6 +1,7 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import MenuEdictSubMenu, { EdictMenuSubMenuId } from "./MenuEdictsSubMenu";
 
 const tropicoButton = {
   background: 'linear-gradient(to bottom, #e0d8b0 0%, #c8c090 100%)',
@@ -21,30 +22,41 @@ const tropicoButton = {
   },
 };
 
-const MenuEdicts: React.FC = () => (
-  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, width: 320, pl: 2 }}>
-    <Button variant="contained" color="primary" id="edict-1" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
-      Edict 1
-    </Button>
-    <Button variant="contained" color="primary" id="edict-2" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
-      Edict 2
-    </Button>
-    <Button variant="contained" color="primary" id="edict-3" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
-      Edict 3
-    </Button>
-    <Button variant="contained" color="primary" id="edict-4" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
-      Edict 4
-    </Button>
-    <Button variant="contained" color="primary" id="edict-5" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
-      Edict 5
-    </Button>
-    <Button variant="contained" color="primary" id="edict-6" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
-      Edict 6
-    </Button>
-    <Button variant="contained" color="primary" id="edict-7" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
-      Edict 7
-    </Button>
-  </Box>
-);
+const MenuEdicts: React.FC = () => {
+  const [subMenu, setSubMenu] = React.useState<EdictMenuSubMenuId>(EdictMenuSubMenuId.PeopleEdict);
+  let subMenuComponent;
+  return (
+    <Box sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+
+      <MenuEdictSubMenu
+        subMenu={subMenu}
+        setSubMenu={setSubMenu}
+      />
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, width: 320, pl: 2 }}>
+        <Button variant="contained" color="primary" id="edict-1" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
+          Edict 1
+        </Button>
+        <Button variant="contained" color="primary" id="edict-2" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
+          Edict 2
+        </Button>
+        <Button variant="contained" color="primary" id="edict-3" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
+          Edict 3
+        </Button>
+        <Button variant="contained" color="primary" id="edict-4" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
+          Edict 4
+        </Button>
+        <Button variant="contained" color="primary" id="edict-5" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
+          Edict 5
+        </Button>
+        <Button variant="contained" color="primary" id="edict-6" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
+          Edict 6
+        </Button>
+        <Button variant="contained" color="primary" id="edict-7" sx={{ ...tropicoButton, width: 100, borderRadius: 2 }}>
+          Edict 7
+        </Button>
+      </Box>
+    </Box>
+  );
+}
 
 export default MenuEdicts;

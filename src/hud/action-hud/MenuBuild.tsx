@@ -43,7 +43,7 @@ const MenuBuild: React.FC = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column'}}>
+    <Box sx={{ p: 0,  display: 'flex', flexDirection: 'column'}}>
       <MenuBuildSubMenu
         subMenu={subMenu}
         setSubMenu={setSubMenu}

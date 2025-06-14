@@ -1,8 +1,7 @@
 import React from "react";
-import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import MenuBuild from "./MenuBuild";
-import { Stack, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Box, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import MenuEdicts from "./MenuEdicts";
 
 const tropicoPaper = {
@@ -17,7 +16,7 @@ const tropicoButton = {
   boxShadow: 'inset 0 0 5px rgba(0,0,0,0.2), 2px 2px 5px rgba(0,0,0,0.2)',
   textShadow: '1px 1px 0 rgba(255,255,255,0.3)',
   fontWeight: 700,
-  borderRadius: 2,
+  borderRadius: 1,
   '&:hover': {
     filter: 'brightness(1.05)',
     transform: 'translateY(-1px)',
@@ -31,26 +30,29 @@ const ActionHud: React.FC = () => {
   const [selectedMenu, setSelectedMenu] = React.useState<string | null>('build');
   function renderMenu() {
     switch (selectedMenu) {
-        case 'build':
-          return <MenuBuild />;
-        case 'edicts':
-          return <MenuEdicts />;
-        case 'viewMenu':
-          return <div>View Menu Placeholder</div>;
-        default:
-          return null;
+      case 'build':
+        return <MenuBuild />;
+      case 'edicts':
+        return <MenuEdicts />;
+      case 'viewMenu':
+        return <div>View Menu Placeholder</div>;
+      default:
+        return null;
     }
   }
 
   return (
-    <Paper elevation={6} sx={{ ...tropicoPaper, position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', width: 650, borderRadius: 2, p: 2, display: 'flex', gap: 2, pointerEvents: 'auto' }}>
-      <Stack spacing={1} pr={2} borderRight={1} borderColor="grey.700">
+    <Paper elevation={6} sx={{ ...tropicoPaper, position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', width: 650, height: 200, borderRadius: 1, display: 'flex', gap: 1, pointerEvents: 'auto' }}>
+      <Stack borderRight={1}  borderColor="grey.700">
         <ToggleButtonGroup
           color="secondary"
           orientation="vertical"
           value={selectedMenu}
           exclusive
-          onChange={(event, newValue) => setSelectedMenu(newValue)}
+          onChange={(event, newValue) => {
+            if (newValue === null) return;
+            setSelectedMenu(newValue)
+          }}
         >
           <ToggleButton sx={tropicoButton} value="build" aria-label="list">
             Build 🔨
@@ -63,7 +65,7 @@ const ActionHud: React.FC = () => {
           </ToggleButton>
         </ToggleButtonGroup>
       </Stack>
-      {renderMenu()}
+        {renderMenu()}
     </Paper>
   );
 };

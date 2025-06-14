@@ -26,47 +26,38 @@ const subMenuStyles = {
   py: 0
 };
 
-interface MenuBuildSubMenuProps {
-  subMenu: BuildMenuSubMenuId | null;
-  setSubMenu: (subMenu: BuildMenuSubMenuId) => void;
+interface MenuEdictSubMenuProps {
+  subMenu: EdictMenuSubMenuId;
+  setSubMenu: (subMenu: EdictMenuSubMenuId) => void;
 }
 
-export enum BuildMenuSubMenuId {
-  Housing = 'housing',
-  Industry = 'industry',
-  Agriculture = 'agriculture',
-  Tourism = 'tourism',
-  Services = 'services',
-  Entertainment = 'entertainment',
-  Infrastructure = 'infrastructure',
-  Government = 'government',
-  HumanServices = 'humanServices',
-  Landscape = 'landscape'
+export enum EdictMenuSubMenuId {
+  PeopleEdict = 'peopleEdict',
+  ForeignPolicyEdict = 'foreignPolicyEdict',
+  EconomicEdict = 'economicEdict',
+  PoliticalReligiousEdict = 'politicalReligiousEdict',
+  SocialEdict = 'socialEdict'
 }
 
-export interface BuildMenuSubMenuItem {
-  id: BuildMenuSubMenuId;
+export interface EdictMenuSubMenuItem {
+  id: EdictMenuSubMenuId;
   label: string;
   icon: string;
 }
 
-const menus: BuildMenuSubMenuItem[] = [
-  { id: BuildMenuSubMenuId.Housing, label: 'Housing', icon: '🏠' },
-  { id: BuildMenuSubMenuId.Industry, label: 'Industrial', icon: '🏭' },
-  { id: BuildMenuSubMenuId.Agriculture, label: 'Farms and Mines', icon: '🚜' },
-  { id: BuildMenuSubMenuId.Tourism, label: 'Tourist Attractions', icon: '🏖️' },
-  { id: BuildMenuSubMenuId.Services, label: 'Tourist Accommodations', icon: '🏨' },
-  { id: BuildMenuSubMenuId.Entertainment, label: 'Entertainment', icon: '🍷' },
-  { id: BuildMenuSubMenuId.Infrastructure, label: 'Infrastructure', icon: '🛣️' },
-  { id: BuildMenuSubMenuId.Government, label: 'Government', icon: '🏛️' },
-  { id: BuildMenuSubMenuId.HumanServices, label: 'Human Services', icon: '🏥' },
-  { id: BuildMenuSubMenuId.Landscape, label: 'Landscape', icon: '🌴' }
+const menus: EdictMenuSubMenuItem[] = [
+  {id: EdictMenuSubMenuId.PeopleEdict, label: 'People Edicts', icon: '🧑‍🤝‍🧑' },
+  {id: EdictMenuSubMenuId.ForeignPolicyEdict, label: "Foreign Policy", icon: "🌎"},
+  {id: EdictMenuSubMenuId.EconomicEdict, label: "Economic Policy", icon: "💵"},
+  {id: EdictMenuSubMenuId.PoliticalReligiousEdict, label: "Political/Religious Policy", icon: "⛪️"},
+  {id: EdictMenuSubMenuId.SocialEdict, label: "Social Policy", icon: "👥"}
+
 ]
 
-const MenuBuildSubMenu = (props: MenuBuildSubMenuProps) => {
+const MenuEdictSubMenu = (props: MenuEdictSubMenuProps) => {
   const { subMenu, setSubMenu } = props;
 
-  const handleSubMenuChange = (event: React.MouseEvent<HTMLElement>, newSubMenu: BuildMenuSubMenuId | null) => {
+  const handleSubMenuChange = (event: React.MouseEvent<HTMLElement>, newSubMenu: EdictMenuSubMenuId | null) => {
     if (newSubMenu !== null) {
       setSubMenu(newSubMenu);
     }
@@ -107,4 +98,4 @@ const MenuBuildSubMenu = (props: MenuBuildSubMenuProps) => {
   );
 };
 
-export default MenuBuildSubMenu;
+export default MenuEdictSubMenu;
