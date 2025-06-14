@@ -1,0 +1,541 @@
+body {
+    margin: 0;
+    background-color: #1e1e1e;
+    overflow: hidden;
+    font-family: 'Georgia', serif;
+}
+
+#hud {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 160px;
+    background: url('https://i.imgur.com/UbaOpJ1.jpg') repeat-x;
+    border-top: 4px solid #5a3f2e;
+    display: flex;
+    color: #dcd6c9;
+}
+
+#mini-map {
+    width: 180px;
+    height: 100%;
+    background: #2d2d2d;
+    border-right: 2px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+#build-menu {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 8px;
+    justify-content: center;
+    align-content: flex-start;
+}
+
+.build-button {
+    width: 60px;
+    height: 60px;
+    background-color: #645a48;
+    border: 2px inset #4b4233;
+    cursor: pointer;
+    background-image: linear-gradient(to bottom, #6f654f, #433d32);
+    color: #fff;
+    font-size: 10px;
+    text-align: center;
+    line-height: 60px;
+    transition: transform 0.1s ease-in-out;
+}
+
+.build-button:hover {
+    transform: scale(1.05);
+    border-color: #ffe58f;
+}
+
+#info-panel {
+    width: 200px;
+    background: rgba(10, 10, 10, 0.6);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 14px;
+    border-left: 2px solid #444;
+}
+
+.info-block {
+    margin-bottom: 8px;
+}
+
+.graph-placeholder {
+    width: 100%;
+    height: 60px;
+    background: #333;
+    border: 1px solid #666;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    /* Prevent scrollbars from appearing */
+    background-color: #2c2c2c;
+    /* Dark background for the game world to contrast with HUD */
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    /* Improve font rendering on macOS */
+    -moz-osx-font-smoothing: grayscale;
+    /* Improve font rendering on macOS */
+}
+
+/* Custom stone texture and styling */
+.stone-texture {
+    background-color: #5a5a5a;
+    /* Base stone color (dark gray) */
+    /* Multiple linear gradients to create a subtle, chiseled stone pattern */
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+        /* Dark horizontal lines */
+        linear-gradient(90deg, rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+        /* Dark vertical lines */
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        /* Light horizontal highlights */
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    /* Light vertical highlights */
+    background-size: 12px 12px, 12px 12px, 6px 6px, 6px 6px;
+    /* Define pattern size */
+    background-position: 0 0, 0 0, 3px 3px, 3px 3px;
+    /* Offset for secondary pattern to create depth */
+    border: 2px solid #3a3a3a;
+    /* Darker border for definition */
+    /* Inset shadow for depth, and outer shadow for lift */
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.7), 0 6px 10px rgba(0, 0, 0, 0.4);
+    color: #e0e0e0;
+    /* Light text color for readability on dark stone */
+}
+
+/* Custom parchment texture and styling for buttons */
+.parchment-texture {
+    background-color: #e0d8b0;
+    /* Base parchment color (light beige) */
+    /* Radial gradient for subtle texture, linear gradient for depth */
+    background-image:
+        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%),
+        linear-gradient(135deg, #e0d8b0 0%, #c8c090 100%);
+    border: 1px solid #a09870;
+    /* Darker border for parchment */
+    /* Inset shadow for depth, and outer shadow for lift */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2), 2px 2px 5px rgba(0, 0, 0, 0.2);
+    color: #4a4a4a;
+    /* Dark text color for readability on light parchment */
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.3);
+    /* Subtle text shadow */
+    cursor: pointer;
+    /* Indicate interactivity */
+    transition: all 0.15s ease-in-out;
+    /* Smooth transitions for hover/active states */
+}
+
+.parchment-texture:hover {
+    filter: brightness(1.05);
+    /* Slightly brighter on hover */
+    transform: translateY(-1px);
+    /* Slight lift effect on hover */
+}
+
+.parchment-texture:active {
+    transform: translateY(0);
+    /* Return to original position on click */
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+    /* Deeper inset shadow for pressed effect */
+}
+
+/* Diamond shape for the minimap */
+#minimap-diamond {
+    transform: rotate(45deg);
+    /* Rotate the outer container by 45 degrees */
+    overflow: hidden;
+    /* Crucial to hide the corners of the square, creating the diamond shape */
+    border-radius: 10px;
+    /* Apply rounded corners to the square before rotation */
+    width: 100%;
+    /* Ensure it takes full width of its container */
+    height: 100%;
+    /* Ensure it takes full height of its container */
+    display: flex;
+    /* Use flexbox to center content */
+    align-items: center;
+    justify-content: center;
+}
+
+#minimap-diamond>div {
+    /* Styling for the content inside the diamond */
+    transform: rotate(-45deg);
+    /* Rotate content back by -45 degrees to appear upright */
+    width: 141.42%;
+    /* sqrt(2) * 100% to ensure content fills the rotated square */
+    height: 141.42%;
+    position: absolute;
+    /* Position absolutely within the rotated parent */
+    top: -20.71%;
+    /* Adjust top to center content (calculated as (100 - 141.42)/2 ) */
+    left: -20.71%;
+    /* Adjust left to center content */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #3b423b;
+    /* Dark green/brown background for the map area */
+    border: 2px solid #4a4a4a;
+    /* Border for the map area */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+    /* Inset shadow for depth */
+    font-size: 1.5rem;
+    /* Font size for the "MAP" text */
+    color: #ccc;
+    /* Light gray text color */
+}
+
+/* Styling for the green bar graphs in the stats panel */
+.bar-graph-container {
+    width: 100%;
+    height: 16px;
+    /* Height of the bar */
+    background-color: #4a4a4a;
+    /* Darker background for the empty part of the bar */
+    border-radius: 9999px;
+    /* Fully rounded corners */
+    overflow: hidden;
+    /* Hide overflow of the fill */
+    border: 1px solid #3a3a3a;
+    /* Border for the bar container */
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.4);
+    /* Inset shadow for depth */
+}
+
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%);
+    /* Green gradient for the fill */
+    border-radius: 9999px;
+    /* Fully rounded corners */
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);
+    /* Inset shadow for the fill */
+    transition: width 0.5s ease-out;
+    /* Smooth transition when the bar width changes */
+}
+
+/* Styling for the navigation buttons */
+.nav-button {
+    width: 48px;
+    /* Fixed width */
+    height: 48px;
+    /* Fixed height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e0e0e0;
+    /* Icon color */
+    font-size: 1.5rem;
+    /* Icon size */
+    border-radius: 8px;
+    /* Rounded corners */
+    cursor: pointer;
+    /* Indicate interactivity */
+    transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+    /* Smooth transitions */
+}
+
+.nav-button:hover {
+    transform: translateY(-2px);
+    /* Slight lift on hover */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), 0 6px 10px rgba(0, 0, 0, 0.4);
+    /* Enhanced shadow on hover */
+}
+
+.nav-button:active {
+    transform: translateY(0);
+    /* Return to original position on click */
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+    /* Deeper inset shadow for pressed effect */
+}
+
+/* Specific positioning for main HUD elements */
+#minimap-container {
+    bottom: 16px;
+    left: 16px;
+    width: 192px;
+    height: 192px;
+}
+
+/* Bottom left */
+#notification-area {
+    bottom: 16px;
+    right: 16px;
+    width: 128px;
+    height: 128px;
+}
+
+/* Bottom right */
+
+/* Action bar with new internal layout */
+#action-bar {
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 16px;
+    /* Increased padding for the larger bar */
+    display: flex;
+    /* Use flexbox for the main container */
+    gap: 16px;
+    /* Gap between the button column and the grid */
+    width: 500px;
+    /* Fixed width for desktop */
+    height: 200px;
+    /* Fixed height for desktop */
+    align-items: flex-start;
+    /* Align items to the top */
+}
+
+/* Stats panel positioned above and slightly left of notification area */
+#stats-panel {
+    bottom: calc(16px + 128px + 16px);
+    /* 16px (notification bottom) + 128px (notification height) + 16px (gap) */
+    right: 16px;
+    /* Align with notification area's right edge */
+    width: 200px;
+    /* Smaller width for 2x2 grid */
+    padding: 12px;
+    /* Adjusted padding */
+}
+
+/* Navigation buttons positioned around the bottom elements */
+/* These calculations are relative to the screen width and the action bar's fixed width */
+#nav-btn-home {
+    bottom: 16px;
+    left: calc(50% - 250px - 60px);
+}
+
+/* 250px is half of action-bar width, 60px for button + gap */
+#nav-btn-users {
+    bottom: 88px;
+    left: calc(50% - 250px - 60px);
+}
+
+#nav-btn-settings {
+    bottom: 16px;
+    right: calc(50% - 250px - 60px);
+}
+
+#nav-btn-info {
+    bottom: 88px;
+    right: calc(50% - 250px - 60px);
+}
+
+/* Styles for item slots in the 2x5 grid */
+.item-slot {
+    width: 64px;
+    /* Fixed width for item slots */
+    height: 64px;
+    /* Fixed height for item slots */
+    background-color: #4a4a4a;
+    /* Darker background for item slots */
+    border-radius: 8px;
+    /* Rounded corners */
+    border: 1px solid #3a3a3a;
+    /* Border for item slots */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+    /* Inset shadow for depth */
+    color: #ccc;
+    /* Light text color */
+    font-size: 0.75rem;
+    /* Smaller font size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.1s ease-in-out;
+}
+
+.item-slot:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.item-slot:active {
+    transform: translateY(0);
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7);
+}
+
+/* Styles for minimap navigation buttons */
+.minimap-nav-button {
+    width: 40px;
+    /* Smaller than main nav buttons */
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e0e0e0;
+    font-size: 1.2rem;
+    /* Smaller icon size */
+    border-radius: 6px;
+    /* Slightly smaller rounded corners */
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+    z-index: 10;
+    /* Ensure they are above the map */
+    /* Apply stone-texture styles */
+    background-color: #5a5a5a;
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 12px 12px, 12px 12px, 6px 6px, 6px 6px;
+    background-position: 0 0, 0 0, 3px 3px, 3px 3px;
+    border: 2px solid #3a3a3a;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.minimap-nav-button:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.minimap-nav-button:active {
+    transform: translateY(0);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+/* Responsive adjustments for smaller screens (e.g., mobile) */
+@media (max-width: 768px) {
+
+    /* Change main HUD elements to relative positioning for vertical stacking */
+    #stats-panel,
+    #notification-area,
+    #minimap-container,
+    #action-bar,
+    #nav-btn-home,
+    #nav-btn-settings,
+    #nav-btn-users,
+    #nav-btn-info {
+        position: relative;
+        /* Override absolute positioning */
+        margin: 1rem auto;
+        /* Center horizontally and add vertical margin */
+        width: 90%;
+        /* Take up more width on smaller screens */
+        left: auto;
+        /* Remove absolute left positioning */
+        right: auto;
+        /* Remove absolute right positioning */
+        top: auto;
+        /* Remove absolute top positioning */
+        bottom: auto;
+        /* Remove absolute bottom positioning */
+        transform: none;
+        /* Remove any transforms */
+    }
+
+    /* Adjust specific sizes for mobile */
+    #notification-area {
+        width: 100px;
+        /* Smaller notification area */
+        height: 100px;
+    }
+
+    #minimap-container {
+        width: 140px;
+        /* Smaller minimap */
+        height: 140px;
+    }
+
+    /* Minimap buttons will naturally adjust with relative positioning of container */
+    .minimap-nav-button {
+        width: 32px;
+        /* Even smaller buttons on mobile */
+        height: 32px;
+        font-size: 1rem;
+    }
+
+    #action-bar {
+        flex-direction: column;
+        /* Stack vertically on mobile */
+        height: auto;
+        /* Auto height for content */
+        width: 90%;
+        /* Take up more width */
+        padding: 1rem;
+        /* Adjust padding */
+        gap: 1rem;
+        /* Adjust gap */
+        align-items: stretch;
+        /* Stretch items to fill width */
+    }
+
+    #action-bar>div:first-child {
+        /* Vertical buttons column */
+        border-right: none;
+        /* Remove vertical border */
+        border-bottom: 1px solid #6a6a6a;
+        /* Add horizontal border */
+        padding-bottom: 1rem;
+        /* Add padding below border */
+        margin-bottom: 1rem;
+        /* Add margin below border */
+        flex-direction: row;
+        /* Arrange buttons horizontally */
+        flex-wrap: wrap;
+        /* Allow buttons to wrap */
+        justify-content: center;
+        /* Center buttons */
+        gap: 0.5rem;
+        /* Smaller gap between buttons */
+    }
+
+    #action-bar>div:last-child {
+        /* 2x5 grid for items */
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        /* Change to 2x3 grid on mobile */
+        padding-left: 0;
+        /* Remove left padding */
+        gap: 0.5rem;
+        /* Smaller gap */
+        justify-items: center;
+        /* Center grid items */
+    }
+
+    .item-slot {
+        width: 56px;
+        /* Smaller item slots on mobile */
+        height: 56px;
+    }
+
+    #stats-panel {
+        width: 90%;
+        /* Take full width on mobile */
+        bottom: auto;
+        /* Remove specific bottom positioning */
+        right: auto;
+        /* Remove specific right positioning */
+    }
+
+    /* Adjust the main HUD container for mobile to allow vertical flow */
+    #hud-container {
+        position: fixed;
+        /* Make it stick to the viewport */
+        bottom: 0;
+        /* Stick to the bottom */
+        left: 0;
+        width: 100vw;
+        /* Full viewport width */
+        height: 500px;
+        /* Fixed height as requested */
+        overflow: hidden;
+        /* Hide anything that goes outside this fixed height */
+    }
+}

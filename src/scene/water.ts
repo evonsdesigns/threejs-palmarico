@@ -3,6 +3,8 @@ import { Water } from 'three/examples/jsm/objects/Water.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { SkySunController } from './SkySunController';
+import vertexShader from '../shaders/vertexShader.glsl?raw';
+import fragmentShader from '../shaders/fragmentShader.glsl?raw';
 
 export class WaterScene {
     private container: HTMLElement;
@@ -77,8 +79,8 @@ export class WaterScene {
                     this.waves.C.wavelength,
                 ],
             };
-            shader.vertexShader = (document.getElementById('vertexShader') as HTMLScriptElement).textContent!;
-            shader.fragmentShader = (document.getElementById('fragmentShader') as HTMLScriptElement).textContent!;
+            shader.vertexShader = vertexShader;
+            shader.fragmentShader = fragmentShader;
         };
 
         this.scene.add(this.water);

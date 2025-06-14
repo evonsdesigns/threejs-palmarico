@@ -15,7 +15,8 @@
     "noImplicitReturns": true,
     "skipLibCheck": true,
     "noImplicitAny": false,
-    "noImplicitThis": false
+    "noImplicitThis": false,
+    "jsx": "react-jsx"
   },
   "include": ["src"]
 }

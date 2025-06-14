@@ -16,6 +16,7 @@
   "dependencies": {
     "noisejs": "^2.1.0",
     "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "three": "^0.162.0",
     "three-viewport-gizmo": "^2.2.0"
   }
