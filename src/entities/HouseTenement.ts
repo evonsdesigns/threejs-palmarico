@@ -1,7 +1,7 @@
 import { Vector3, BoxGeometry, MeshStandardMaterial, Mesh, Color } from "three";
 import GameEntity from "./GameEntity";
 
-export default class HouseTenant extends GameEntity {
+export default class HouseTenement extends GameEntity {
   constructor(position: Vector3) {
     super(position);
 

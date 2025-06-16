@@ -14,7 +14,7 @@ import { createCamera } from "./camera";
 import { SkySunController } from './SkySunController';
 import House1 from "../entities/house1";
 import { createMapControls } from "./controls";
-import HouseTenant from "../entities/HouseTenant";
+import HouseTenement from "../entities/HouseTenement";
 
 
 class GameScene {
@@ -36,7 +36,7 @@ class GameScene {
   private _gameEntities: GameEntity[] = [];
   private _placingBuilding = false;
   private _ghostBuilding: House1 | null = null;
-  private _buildingTypeChoice = 'house1'; // Default building type
+  private _buildingTypeChoice = '';
 
   private constructor() {
     this._width = window.innerWidth;
@@ -96,11 +96,11 @@ class GameScene {
     document.getElementById('build-house')?.addEventListener('click', () => {
       this._buildingTypeChoice = 'house1';
       this.updateGhostBuilding();
-  });
+    });
     document.getElementById('build-tenant')?.addEventListener('click', () => {
       this._buildingTypeChoice = 'tenant';
-     this.updateGhostBuilding();
-   });
+      this.updateGhostBuilding();
+    });
     window.addEventListener('keydown', (event) => {
       if (event.key === 'b') {
         console.log("Enabling building placement from shortcut B");
@@ -116,12 +116,26 @@ class GameScene {
     });
   }
 
+  public toggleBuildingPlacement(buildingTypeId?: string) {
+    if (this.isBuildingPlacementEnabled && buildingTypeId === this._buildingTypeChoice) {
+      this.disableBuildingPlacement();
+    } else {
+      this.enableBuildingPlacement();
+    }
+  }
+  
+
+  public setBuildingType = (buildingTypeId: string) => {
+    this._buildingTypeChoice = buildingTypeId;
+    this.updateGhostBuilding();
+  }
+
   private getBuildingType = () => {
     switch (this._buildingTypeChoice) {
       case 'house1':
         return House1;
-      case 'tenant':
-        return HouseTenant;
+      case 'tenement':
+        return HouseTenement;
       default:
         console.warn(`Unknown building type: ${this._buildingTypeChoice}`);
         return House1; // Default to House1 if unknown
@@ -209,6 +223,7 @@ class GameScene {
       this._scene.remove(this._ghostBuilding.mesh);
       this._ghostBuilding = null;
     }
+    this._buildingTypeChoice = ''; // Reset building type choice
   }
 
   private getMouseXYZ = (event: MouseEvent) => {
