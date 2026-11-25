@@ -3,7 +3,21 @@ import Box from "@mui/material/Box";
 import MenuBuildSubMenu, { BuildMenuSubMenuId } from "./MenuBuildSubMenu";
 import MenuGeneric from "./MenuGeneric";
 import * as buttonData from "./button-data";
-import GameScene from "../../scene/GameScene";
+import { buildings, game, BuildingType } from "../../logic/game";
+
+const availableBuildings: Record<string, BuildingType> = {
+  house: "house",
+  apartment: "apartment",
+  condominium: "condominium",
+  "luxury-house": "luxury-house",
+  bunkhouse: "bunkhouse",
+  "country-house": "country-house",
+  bungalow: "bungalow",
+  ranch: "ranch",
+  farm: "farm",
+  marketplace: "market",
+  clinic: "clinic",
+};
 
 const MenuBuild: React.FC = () => {
   const [subMenu, setSubMenu] = React.useState<BuildMenuSubMenuId>(BuildMenuSubMenuId.Housing);
@@ -42,18 +56,24 @@ const MenuBuild: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ p: 0, display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
       <MenuBuildSubMenu
         subMenu={subMenu}
         setSubMenu={setSubMenu}
       />
       {buttons ?
         <MenuGeneric
-          buttons={buttons}
+          buttons={buttons.filter((button) => button.id !== "shack").map((button) => {
+            const definition = buildings.find((item) => item.id === availableBuildings[button.id]);
+            return {
+              ...button,
+              available: !!definition,
+              description: definition ? `${definition.description} Cost: $${definition.cost}; upkeep: $${definition.upkeep}/month.` : "Not available yet.",
+            };
+          })}
           onButtonClick={(buttonId) =>  {
-            console.log(`Button clicked: ${buttonId}`);
-            GameScene.instance.toggleBuildingPlacement(buttonId);
-            GameScene.instance.setBuildingType(buttonId);
+            const type = availableBuildings[buttonId];
+            if (type) game.select(game.getSnapshot().selected === type ? null : type);
           }}
         /> :
         <Box sx={{ p: 2 }}>Select a submenu</Box>

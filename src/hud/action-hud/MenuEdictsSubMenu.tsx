@@ -57,7 +57,7 @@ const menus: EdictMenuSubMenuItem[] = [
 const MenuEdictSubMenu = (props: MenuEdictSubMenuProps) => {
   const { subMenu, setSubMenu } = props;
 
-  const handleSubMenuChange = (event: React.MouseEvent<HTMLElement>, newSubMenu: EdictMenuSubMenuId | null) => {
+  const handleSubMenuChange = (_event: React.MouseEvent<HTMLElement>, newSubMenu: EdictMenuSubMenuId | null) => {
     if (newSubMenu !== null) {
       setSubMenu(newSubMenu);
     }

@@ -1,276 +1,294 @@
-import {
-  HemisphereLight,
-  Scene,
-  Vector3,
-  WebGLRenderer,
-} from "three";
 import * as THREE from "three";
-import GameEntity from "../entities/GameEntity";
+import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import GameMap from "../map/GameMap";
 import ResourceManager from "../utils/ResourceManager";
-import { MapControls } from "three/examples/jsm/Addons";
-import { WaterScene } from './water';
+import { buildings, BuildingDefinition, BuildingType, game, PlacedBuilding, starterBuildings } from "../logic/game";
+import { WaterScene } from "./water";
 import { createCamera } from "./camera";
-import { SkySunController } from './SkySunController';
-import House1 from "../entities/house1";
+import { SkySunController } from "./SkySunController";
 import { createMapControls } from "./controls";
-import HouseTenement from "../entities/HouseTenement";
-
+import { createBuilding } from "./buildings";
 
 class GameScene {
   private static _instance = new GameScene();
-  public static get instance() {
-    return this._instance;
-  }
-  private _width: number;
-  private _height: number;
-  private _renderer: WebGLRenderer;
-  private _camera: THREE.OrthographicCamera;
-  private _controls: MapControls;
-  private _skySun: SkySunController;
-  private _gameMap: GameMap;
-  private _sunTime = 0;
-  public lastElevation = 0;
-  private isBuildingPlacementEnabled = false;
-  private readonly _scene = new Scene();
-  private _gameEntities: GameEntity[] = [];
-  private _placingBuilding = false;
-  private _ghostBuilding: House1 | null = null;
-  private _buildingTypeChoice = '';
+  public static get instance() { return this._instance; }
+
+  private readonly scene = new THREE.Scene();
+  private readonly renderer = new THREE.WebGLRenderer({ antialias: true });
+  private readonly camera = createCamera();
+  private readonly controls: MapControls;
+  private readonly map = new GameMap(new THREE.Vector3(), 1024);
+  private readonly water: WaterScene;
+  private readonly raycaster = new THREE.Raycaster();
+  private readonly clock = new THREE.Clock();
+  private ghost: THREE.Group | null = null;
+  private ghostType: BuildingType | null = null;
+  private placement: THREE.Vector3 | null = null;
+  private readonly trees: THREE.Vector2[] = [];
+  private pointerDown: { x: number; y: number } | null = null;
+  private elapsed = 0;
+  private ready = false;
+  private settlementReady = false;
+  private syncingShacks = false;
 
   private constructor() {
-    this._width = window.innerWidth;
-    this._height = window.innerHeight;
+    const target = document.querySelector<HTMLDivElement>("#app");
+    if (!target) throw new Error("Unable to find game container");
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    target.appendChild(this.renderer.domElement);
+    this.controls = createMapControls(this.camera, this.renderer);
+    const sky = new SkySunController(this.scene);
+    sky.setParameters(50, 180);
+    this.water = new WaterScene(this.scene, sky);
+    this.scene.add(new THREE.HemisphereLight(0xfff2d5, 0x4c6650, 1.5));
 
-    this._renderer = new WebGLRenderer({
-      alpha: true,
-      antialias: true,
-    });
-
-    this._renderer.setPixelRatio(window.devicePixelRatio);
-    this._renderer.setSize(this._width, this._height);
-    // find the target html element
-    const targetElement = document.querySelector<HTMLDivElement>("#app");
-    if (!targetElement) {
-      throw "unable to find target element";
-    }
-    targetElement.appendChild(this._renderer.domElement);
-    this._camera = createCamera();
-
-    this._controls = createMapControls(
-      this._camera,
-      this._renderer
-    );
-    this._skySun = new SkySunController(this._scene, this._renderer);
-
-    const waterScene = new WaterScene(
-      'app',
-      this._camera,
-      this._renderer,
-      this._scene,
-      this._skySun
-    );
-    waterScene.init();
-    waterScene.animate();
-
-    // listen to size change
-    window.addEventListener("resize", this.resize, false);
-
-    // add the game map
-    this._gameMap = new GameMap(new Vector3(0, 0, 0), 1024);
-    this._gameEntities.push(this._gameMap);
-
-    const placeBtn = document.getElementById('build');
-    if (placeBtn) {
-      placeBtn.addEventListener('click', () => {
-        if (!this.isBuildingPlacementEnabled) {
-          this.isBuildingPlacementEnabled = true;
-          GameScene.instance.enableBuildingPlacement();
-        } else {
-          this.isBuildingPlacementEnabled = false;
-          GameScene.instance.disableBuildingPlacement();
-        }
-      });
-    }
-
-    document.getElementById('build-house')?.addEventListener('click', () => {
-      this._buildingTypeChoice = 'house1';
-      this.updateGhostBuilding();
-    });
-    document.getElementById('build-tenant')?.addEventListener('click', () => {
-      this._buildingTypeChoice = 'tenant';
-      this.updateGhostBuilding();
-    });
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'b') {
-        console.log("Enabling building placement from shortcut B");
-        if (!this.isBuildingPlacementEnabled) {
-          this.isBuildingPlacementEnabled = true;
-          this.enableBuildingPlacement();
-        } else {
-          console.log("disabling building placement from shortcut B");
-          this.isBuildingPlacementEnabled = false;
-          this.disableBuildingPlacement();
-        }
-      }
-    });
+    window.addEventListener("resize", this.resize);
+    window.addEventListener("keydown", this.onKeyDown);
+    this.renderer.domElement.addEventListener("pointermove", this.onPointerMove);
+    this.renderer.domElement.addEventListener("pointerdown", this.onPointerDown);
+    this.renderer.domElement.addEventListener("pointerup", this.onPointerUp);
+    this.renderer.domElement.addEventListener("pointerleave", this.onPointerLeave);
+    game.subscribe(this.syncGhost);
+    game.subscribe(this.syncShacks);
   }
-
-  public toggleBuildingPlacement(buildingTypeId?: string) {
-    if (this.isBuildingPlacementEnabled && buildingTypeId === this._buildingTypeChoice) {
-      this.disableBuildingPlacement();
-    } else {
-      this.enableBuildingPlacement();
-    }
-  }
-  
-
-  public setBuildingType = (buildingTypeId: string) => {
-    this._buildingTypeChoice = buildingTypeId;
-    this.updateGhostBuilding();
-  }
-
-  private getBuildingType = () => {
-    switch (this._buildingTypeChoice) {
-      case 'house1':
-        return House1;
-      case 'tenement':
-        return HouseTenement;
-      default:
-        console.warn(`Unknown building type: ${this._buildingTypeChoice}`);
-        return House1; // Default to House1 if unknown
-    }
-  };
-
-  private resize = () => {
-    this._width = window.innerWidth;
-    this._height = window.innerHeight;
-    this._renderer.setSize(this._width, this._height);
-    this._camera.aspect = this._width / this._height;
-    this._camera.updateProjectionMatrix();
-    this._controls.update();
-  };
 
   public load = async () => {
-    // load game resources
     await ResourceManager.instance.load();
-
-    // load game entities
-    for (let index = 0; index < this._gameEntities.length; index++) {
-      const element = this._gameEntities[index];
-      await element.load();
-      this._scene.add(element.mesh);
-    }
-    // add a light to the scene
-    const light = new HemisphereLight(0xffffbb, 0x080820, 1);
-    this._scene.add(light);
+    await this.map.load();
+    this.scene.add(this.map.mesh);
+    this.map.mesh.updateMatrixWorld();
+    this.createStartingSettlement();
+    this.settlementReady = true;
+    this.syncShacks();
+    this.addTrees();
+    this.ready = true;
+    this.syncGhost();
+    this.renderer.domElement.dataset.ready = "true";
   };
 
   public render = () => {
     requestAnimationFrame(this.render);
-    this._renderer.render(this._scene, this._camera);
-    this._controls.update();
-
-    if (this.lastElevation < 1) {
-      this._sunTime += 0.001;
-    } else {
-      this._sunTime += 0.01;
+    const delta = Math.min(this.clock.getDelta(), 0.1);
+    this.water.update(delta);
+    if (!game.getSnapshot().paused) {
+      this.elapsed += delta;
+      if (this.elapsed >= 5) {
+        this.elapsed -= 5;
+        game.advanceMonth();
+      }
     }
-    const elevation = 45 + 45 * Math.sin(this._sunTime); // 0 to 90 degrees
-
-
-    const azimuth = (this._sunTime * 30) % 360; // Slowly rotate azimuth
-    this._skySun.setParameters(elevation, azimuth);
-    this._skySun.updateFade(elevation);
-    this.lastElevation = elevation;
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
   };
 
-  // public update ghost building
-  public updateGhostBuilding() {
-    // remove the existing ghost building mesh if it exists
-    if (this._ghostBuilding) {
-      this._scene.remove(this._ghostBuilding.mesh);
+  public zoom(factor: number) {
+    this.camera.zoom = THREE.MathUtils.clamp(this.camera.zoom * factor, this.controls.minZoom, this.controls.maxZoom);
+    this.camera.updateProjectionMatrix();
+    this.controls.update();
+  }
+
+  public rotate(angle: number) {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+    this.camera.position.copy(this.controls.target).add(offset);
+    this.controls.update();
+  }
+
+  public getMapHeight(x: number, z: number) {
+    return this.map.getHeightAt(x, z);
+  }
+
+  private resize = () => {
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+
+  private syncGhost = () => {
+    const selected = game.getSnapshot().selected;
+    if (!this.ready || selected === this.ghostType) return;
+    if (this.ghost) {
+      this.scene.remove(this.ghost);
+      this.disposeBuilding(this.ghost);
+      this.ghost = null;
     }
-    const SelectedBuilding = this.getBuildingType();
+    this.ghostType = selected;
+    this.placement = null;
+    if (selected) {
+      this.ghost = createBuilding(selected, true);
+      this.ghost.visible = false;
+      this.scene.add(this.ghost);
+    }
+  };
 
-    console.log('bldg type:', this._buildingTypeChoice);
-
-    this._ghostBuilding = new SelectedBuilding(new THREE.Vector3(0, 0, 0));
-    this._ghostBuilding.mesh.traverse((child: any) => {
-      if (child.isMesh) {
-        child.material = child.material.clone();
-        child.material.transparent = true;
-        child.material.opacity = 0.5;
-        child.material.color.set(0xffff00);
+  private disposeBuilding(group: THREE.Group) {
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => material.dispose());
       }
     });
-    this._scene.add(this._ghostBuilding.mesh);
   }
 
-  public enableBuildingPlacement() {
-    this._placingBuilding = true;
-    window.addEventListener('pointerdown', this._onPointerDown);
-    window.addEventListener('pointermove', this._onPointerMove);
-    this.updateGhostBuilding();
-  }
-
-  public disableBuildingPlacement() {
-    this._placingBuilding = false;
-    window.removeEventListener('pointerdown', this._onPointerDown);
-    window.removeEventListener('pointermove', this._onPointerMove);
-    // Remove ghost building
-    if (this._ghostBuilding) {
-      this._scene.remove(this._ghostBuilding.mesh);
-      this._ghostBuilding = null;
-    }
-    this._buildingTypeChoice = ''; // Reset building type choice
-  }
-
-  private getMouseXYZ = (event: MouseEvent) => {
-    // Convert screen coordinates to world coordinates
-    const mouse = new THREE.Vector2(
-      (event.clientX / this._width) * 2 - 1,
-      -(event.clientY / this._height) * 2 + 1
-    );
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, this._camera);
-
-    // Use the controls' target for the ground plane height
-    const groundY = this._controls.target.y;
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -groundY);
-    const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(plane, intersection);
-
-    // Offset the ghost building to the right and down
-    const offsetX = 15; // increase this value for more rightward offset
-    const offsetZ = 15; // increase this value for more downward offset
-
-    const x = intersection.x + offsetX;
-    const z = intersection.z + offsetZ;
-    const y = this._gameMap.getHeightAt(x, z);
-
-    return { x, y, z };
-  }
-
-
-  private _onPointerMove = (event: PointerEvent) => {
-    if (!this._placingBuilding || !this._ghostBuilding) return;
-    const { x, y, z } = this.getMouseXYZ(event);
-    this._ghostBuilding.mesh.position.set(x, y, z);
+  private onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape" && game.getSnapshot().selected) game.select(null);
   };
 
-  private _onPointerDown = (event: PointerEvent) => {
-    if (!this._placingBuilding) return;
-    const { x, y, z } = this.getMouseXYZ(event);
-    const SelectedBuilding = this.getBuildingType();
+  private terrainHeight(x: number, z: number): number | null {
+    this.raycaster.set(new THREE.Vector3(x, 100, z), new THREE.Vector3(0, -1, 0));
+    return this.raycaster.intersectObject(this.map.mesh)[0]?.point.y ?? null;
+  }
 
+  private createStartingSettlement() {
+    const placed: PlacedBuilding[] = [];
+    for (const type of starterBuildings) {
+      const definition = buildings.find((item) => item.id === type)!;
+      const site = this.findSite(definition, placed);
+      placed.push({ type, x: site.x, z: site.z });
+      const model = createBuilding(type);
+      model.position.copy(site);
+      this.scene.add(model);
+    }
+    game.initializeIsland(placed);
+  }
 
-    const buildingPosition = new THREE.Vector3(x, y, z);
-    console.log("Placing building at:", buildingPosition);
-    const building = new SelectedBuilding(buildingPosition);
-    this._scene.add(building.mesh);
-    this._gameEntities.push(building);
-    //this._gameMap.flattenTerrain(x, z, 5);
+  private findSite(definition: BuildingDefinition, placed: PlacedBuilding[]): THREE.Vector3 {
+    for (let ring = 0; ring <= 16; ring++) {
+      for (let x = -ring; x <= ring; x++) {
+        for (let z = -ring; z <= ring; z++) {
+          if (Math.max(Math.abs(x), Math.abs(z)) !== ring) continue;
+          const px = x * 12;
+          const pz = z * 12;
+          const height = this.terrainHeight(px, pz);
+          if (height === null) continue;
+          const candidate = new THREE.Vector3(px, height, pz);
+          if (!this.validate(candidate, definition, placed)) return candidate;
+        }
+      }
+    }
+    throw new Error(`Unable to find dry, level land for ${definition.name}.`);
+  }
+
+  private syncShacks = () => {
+    if (this.syncingShacks || !this.settlementReady) return;
+    if (game.getSnapshot().housing >= game.getSnapshot().population) return;
+    this.syncingShacks = true;
+    try {
+      const definition = buildings.find((item) => item.id === "shack")!;
+      while (game.getSnapshot().housing < game.getSnapshot().population) {
+        const site = this.findSite(definition, game.getSnapshot().placed);
+        const model = createBuilding("shack");
+        model.position.copy(site);
+        this.scene.add(model);
+        game.addShack(site.x, site.z);
+      }
+    } finally {
+      this.syncingShacks = false;
+    }
+  };
+
+  private addTrees() {
+    const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x806344 });
+    const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x398055 });
+    for (let x = -100; x <= 100; x += 22) {
+      for (let z = -100; z <= 100; z += 22) {
+        const seed = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
+        if (seed < 0.53 || Math.hypot(x, z) < 30) continue;
+        const px = x + (seed - 0.5) * 8;
+        const pz = z + (0.5 - seed) * 8;
+        if (game.getSnapshot().placed.some((placed) => {
+          const definition = buildings.find((item) => item.id === placed.type)!;
+          return Math.hypot(px - placed.x, pz - placed.z) < definition.radius + 2;
+        })) continue;
+        const height = this.terrainHeight(px, pz);
+        if (height === null || height < 2) continue;
+        const tree = new THREE.Group();
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.6, 6, 6), trunkMaterial);
+        trunk.position.y = 3;
+        tree.add(trunk);
+        for (let i = 0; i < 5; i++) {
+          const leaf = new THREE.Mesh(new THREE.ConeGeometry(1.1, 5, 4), leafMaterial);
+          const angle = i * Math.PI * 2 / 5;
+          leaf.position.set(Math.sin(angle) * 1.6, 6.2, Math.cos(angle) * 1.6);
+          leaf.rotation.set(Math.cos(angle) * 1.05, 0, -Math.sin(angle) * 1.05);
+          tree.add(leaf);
+        }
+        tree.position.set(px, height, pz);
+        this.scene.add(tree);
+        this.trees.push(new THREE.Vector2(px, pz));
+      }
+    }
+  }
+
+  private validate(point: THREE.Vector3, definition: BuildingDefinition, placedBuildings = game.getSnapshot().placed): string | null {
+    const radius = definition.radius;
+    const heights = [
+      this.terrainHeight(point.x - radius, point.z - radius),
+      this.terrainHeight(point.x + radius, point.z - radius),
+      this.terrainHeight(point.x - radius, point.z + radius),
+      this.terrainHeight(point.x + radius, point.z + radius),
+    ];
+    if (point.y < 1 || heights.some((height) => height === null || height < 1)) return "Buildings must be placed on dry land.";
+    if (heights.some((height) => height !== null && Math.abs(height - point.y) > 2)) return "Choose flatter ground for this building.";
+    if (this.trees.some((tree) => Math.hypot(point.x - tree.x, point.z - tree.y) < radius + 2)) return "A tree is in the way.";
+    if (placedBuildings.some((placed) => {
+      const other = buildings.find((item) => item.id === placed.type)!;
+      return Math.hypot(point.x - placed.x, point.z - placed.z) < radius + other.radius;
+    })) return "There is another building too close.";
+    if (game.getSnapshot().money < definition.cost) return "Not enough treasury funds.";
+    return null;
+  }
+
+  private onPointerMove = (event: PointerEvent) => {
+    if (!this.ready || !this.ghost || !this.ghostType) return;
+    const mouse = new THREE.Vector2(event.clientX / window.innerWidth * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
+    this.raycaster.setFromCamera(mouse, this.camera);
+    const hit = this.raycaster.intersectObject(this.map.mesh)[0];
+    if (!hit) {
+      this.ghost.visible = false;
+      this.placement = null;
+      return;
+    }
+    this.placement = hit.point;
+    this.ghost.visible = true;
+    this.ghost.position.copy(hit.point);
+    const definition = buildings.find((item) => item.id === this.ghostType)!;
+    const invalid = this.validate(hit.point, definition);
+    this.ghost.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+        child.material.color.set(invalid ? 0xe45a45 : 0x8be4b0);
+      }
+    });
+  };
+
+  private onPointerDown = (event: PointerEvent) => {
+    if (event.button === 0) this.pointerDown = { x: event.clientX, y: event.clientY };
+  };
+
+  private onPointerUp = (event: PointerEvent) => {
+    const down = this.pointerDown;
+    this.pointerDown = null;
+    if (!down || event.button !== 0 || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 5) return;
+    const type = game.getSnapshot().selected;
+    if (!type || !this.placement) return;
+    const definition = buildings.find((item) => item.id === type)!;
+    const invalid = this.validate(this.placement, definition);
+    if (invalid) {
+      game.notify(invalid);
+      return;
+    }
+    if (game.place(type, this.placement.x, this.placement.z)) {
+      const model = createBuilding(type);
+      model.position.copy(this.placement);
+      this.scene.add(model);
+      this.onPointerMove(event);
+    }
+  };
+
+  private onPointerLeave = () => {
+    this.pointerDown = null;
+    this.placement = null;
+    if (this.ghost) this.ghost.visible = false;
   };
 }
 

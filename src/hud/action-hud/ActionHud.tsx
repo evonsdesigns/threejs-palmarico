@@ -1,13 +1,14 @@
 import React from "react";
 import Paper from "@mui/material/Paper";
 import MenuBuild from "./MenuBuild";
-import { Box, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Stack, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import MenuEdicts from "./MenuEdicts";
 
 const tropicoPaper = {
-  border: '2px solid #5a3f2e',
-  color: '#dcd6c9',
-  boxShadow: '0 6px 10px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.7)',
+  border: '2px solid #70553b',
+  color: '#efe3c6',
+  backgroundColor: '#4c4a3b',
+  boxShadow: '0 6px 14px rgba(0,0,0,0.4), inset 0 0 12px rgba(0,0,0,0.35)',
 };
 const tropicoButton = {
   background: 'linear-gradient(to bottom, #e0d8b0 0%, #c8c090 100%)',
@@ -42,14 +43,14 @@ const ActionHud: React.FC = () => {
   }
 
   return (
-    <Paper elevation={6} sx={{ ...tropicoPaper, position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', width: 650, height: 200, borderRadius: 1, display: 'flex', gap: 1, pointerEvents: 'auto' }}>
+    <Paper elevation={6} sx={{ ...tropicoPaper, position: 'absolute', bottom: 16, left: { xs: 152, lg: '50%' }, right: { xs: 166, lg: 'auto' }, transform: { xs: 'none', lg: 'translateX(-50%)' }, width: { xs: 'auto', lg: 650 }, height: 200, borderRadius: 1, display: 'flex', gap: 1, overflow: 'hidden', pointerEvents: 'auto' }}>
       <Stack borderRight={1}  borderColor="grey.700">
         <ToggleButtonGroup
           color="secondary"
           orientation="vertical"
           value={selectedMenu}
           exclusive
-          onChange={(event, newValue) => {
+          onChange={(_event, newValue) => {
             if (newValue === null) return;
             setSelectedMenu(newValue)
           }}

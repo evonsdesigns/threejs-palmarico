@@ -1,32 +1,51 @@
-import React from "react";
-import Paper from "@mui/material/Paper";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
+import React, { useSyncExternalStore } from "react";
+import { game } from "../../logic/game";
+import "./stats-panel.css";
 
-const tropicoPaper = {
-  border: '2px solid #5a3f2e',
-  color: '#dcd6c9',
-  boxShadow: '0 6px 10px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.7)',
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const money = (value: number) => `${value < 0 ? "-" : ""}$${Math.abs(value).toLocaleString()}`;
+
+const StatsPanel: React.FC = () => {
+  const state = useSyncExternalStore(game.subscribe, game.getSnapshot);
+  const readouts = [
+    { label: "Treasury", value: money(state.money) },
+    { label: "Date", value: `${months[state.month - 1]} ${state.year}` },
+    { label: "Slush Fund", value: money(state.slushFund) },
+    { label: "Population", value: state.population.toLocaleString() },
+  ];
+
+  return (
+    <section className="island-stats" aria-label="Island statistics">
+      <div className="island-stats__crest-area">
+        <div className="island-stats__crest" aria-label="Palmarico">
+          <span className="island-stats__crest-sun" aria-hidden="true" />
+          <span className="island-stats__crest-name">PALMARICO</span>
+          <span className="island-stats__crest-subtitle">REPUBLICA</span>
+        </div>
+        <div className="island-stats__approval" role="meter" aria-label="Approval" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.approval} title={`Approval: ${state.approval}%`}>
+          {[1, 2, 3, 4, 5].map((step) => (
+            <span key={step} className={state.approval >= step * 20 ? "is-active" : ""} style={{ height: `${step * 20}%` }} />
+          ))}
+        </div>
+      </div>
+      <div className="island-stats__readouts">
+        {readouts.map((item) => (
+          <div className="island-stats__readout" key={item.label} title={`${item.label}: ${item.value}`} aria-label={`${item.label}: ${item.value}`}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </div>
+        ))}
+      </div>
+      <div className="island-stats__footer">
+        <span title="Food supply / population">Food {state.food}/{state.population}</span>
+        <span title="Approval">★ {state.approval}%</span>
+        <button type="button" onClick={() => game.togglePause()} aria-label={state.paused ? "Resume simulation" : "Pause simulation"}>
+          {state.paused ? "▶" : "❚❚"}
+        </button>
+      </div>
+    </section>
+  );
 };
-
-const StatsPanel: React.FC = () => (
-  <Paper elevation={6} sx={{ ...tropicoPaper, position: 'absolute', bottom: 32, right: 32, width: 220, borderRadius: 2, p: 2, pointerEvents: 'auto' }}>
-    <Typography variant="h6" align="center" fontWeight={700} gutterBottom>Stats</Typography>
-    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-      {[{ label: 'Pop', value: 1200, percent: 75 },
-        { label: 'Gold', value: '$15K', percent: 50 },
-        { label: 'Apprv', value: '85%', percent: 85 },
-        { label: 'Res', value: 420, percent: 60 },
-      ].map((stat) => (
-        <Box key={stat.label} sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="caption" color="text.secondary">{stat.label}: {stat.value}</Typography>
-          <Box sx={{ width: '100%', height: 10, bgcolor: '#4a4a4a', borderRadius: 5, mt: 0.5 }}>
-            <Box sx={{ width: `${stat.percent}%`, height: '100%', bgcolor: 'success.main', borderRadius: 5 }} />
-          </Box>
-        </Box>
-      ))}
-    </Box>
-  </Paper>
-);
 
 export default StatsPanel;

@@ -1,0 +1,156 @@
+.island-stats {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 140px;
+  box-sizing: border-box;
+  padding: 6px;
+  color: #eee3c5;
+  pointer-events: auto;
+  background-color: #786a53;
+  background-image:
+    linear-gradient(90deg, transparent 48%, rgba(35, 29, 21, .22) 50%, transparent 52%),
+    repeating-linear-gradient(0deg, rgba(35, 29, 21, .25) 0 2px, transparent 2px 14px),
+    linear-gradient(135deg, #a69877, #695840 55%, #9a8b6c);
+  background-size: 30px 28px, auto, auto;
+  border: 3px ridge #a89978;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .45), inset 0 0 10px #41372a;
+}
+
+.island-stats__crest-area {
+  height: 110px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.island-stats__crest {
+  width: 108px;
+  height: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 4px ridge #a79469;
+  background: radial-gradient(circle at 50% 48%, #687444 0%, #394d2d 35%, #192b20 75%, #111b15 100%);
+  box-shadow: inset 0 0 18px #10180e, 0 2px 3px #342a1d;
+}
+
+.island-stats__crest-sun {
+  position: absolute;
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(229, 200, 104, .35), transparent 68%);
+}
+
+.island-stats__crest-name, .island-stats__crest-subtitle {
+  position: relative;
+  color: #e6d39a;
+  text-shadow: 1px 2px 2px #1a1b10;
+}
+
+.island-stats__crest-name {
+  font: bold 13px Georgia, serif;
+  letter-spacing: .03em;
+}
+
+.island-stats__crest-subtitle {
+  margin-top: 3px;
+  font: bold 7px Arial, sans-serif;
+  letter-spacing: .16em;
+}
+
+.island-stats__approval {
+  position: absolute;
+  bottom: 1px;
+  right: 0;
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  width: 30px;
+  height: 34px;
+  padding: 2px;
+  background: rgba(37, 37, 26, .8);
+  border: 1px solid #c0ae84;
+}
+
+.island-stats__approval span {
+  flex: 1;
+  min-width: 0;
+  background: #394b35;
+  border: 1px solid #243b20;
+}
+
+.island-stats__approval span.is-active {
+  background: linear-gradient(90deg, #288d31, #73c64a);
+}
+
+.island-stats__readouts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.island-stats__readout {
+  min-width: 0;
+  padding: 3px 2px;
+  text-align: center;
+  background: linear-gradient(#51463d, #342c28);
+  border: 2px ridge #968469;
+  box-shadow: inset 0 0 4px #211b17;
+}
+
+.island-stats__readout span {
+  display: block;
+  color: #c5b99c;
+  font: 8px/1 Arial, sans-serif;
+}
+
+.island-stats__readout strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: bold 11px/1.35 Georgia, serif;
+}
+
+.island-stats__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding-top: 4px;
+  font: bold 9px Arial, sans-serif;
+}
+
+.island-stats__footer button {
+  min-width: 24px;
+  height: 22px;
+  border: 2px ridge #ad9c78;
+  background: #4a4035;
+  color: #f0dfb6;
+  cursor: pointer;
+}
+
+.island-stats__footer button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+@media (min-width: 1200px) {
+  .island-stats { width: 220px; padding: 8px; }
+  .island-stats__crest-area { height: 160px; }
+  .island-stats__crest { width: 158px; height: 158px; border-width: 6px; }
+  .island-stats__crest-name { font-size: 19px; }
+  .island-stats__crest-subtitle { font-size: 9px; }
+  .island-stats__approval { width: 39px; height: 47px; }
+  .island-stats__readout span { font-size: 9px; }
+  .island-stats__readout strong { font-size: 14px; }
+  .island-stats__footer { font-size: 11px; }
+}

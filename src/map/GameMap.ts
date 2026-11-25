@@ -39,12 +39,13 @@ class GameMap extends GameEntity {
     tileTexture.wrapS = tileTexture.wrapT = THREE.RepeatWrapping;
     tileTexture.repeat.set(64, 64); // Repeat texture across the map
 
-    const geometry = new PlaneGeometry(this._size, this._size, this._size - 1, this._size - 1);
+    const segments = 128;
+    const geometry = new PlaneGeometry(this._size, this._size, segments, segments);
     const position = geometry.attributes.position;
-    for (let i = 0; i < this._size; i++) {
-      for (let j = 0; j < this._size; j++) {
-        const idx = i * this._size + j;
-        const height = this.getHeight(i, j);
+    for (let i = 0; i <= segments; i++) {
+      for (let j = 0; j <= segments; j++) {
+        const idx = i * (segments + 1) + j;
+        const height = this.getHeight(j * this._size / segments, i * this._size / segments);
         position.setZ(idx, height);
       }
     }
@@ -52,7 +53,6 @@ class GameMap extends GameEntity {
     const material = new MeshStandardMaterial({ map: tileTexture });
     this._mesh = new Mesh(geometry, material);
     this._mesh.rotation.x = -Math.PI / 2; // rotate to face up
-    this._mesh.position.z = 2; // raise above water
   };
 
   public getHeightAt(x: number, z: number): number {
@@ -62,26 +62,6 @@ class GameMap extends GameEntity {
     const j = Math.round(z + half);
     if (i < 0 || i >= this._size || j < 0 || j >= this._size) return 0;
     return this.getHeight(i, j);
-  }
-  public flattenTerrain(x: number, z: number, radius: number): void {
-    const halfSize = this._size / 2;
-    const startX = Math.max(0, Math.floor(x - radius + halfSize));
-    const endX = Math.min(this._size, Math.ceil(x + radius + halfSize));
-    const startZ = Math.max(0, Math.floor(z - radius + halfSize));
-    const endZ = Math.min(this._size, Math.ceil(z + radius + halfSize));
-
-    const position = this._mesh.geometry.attributes.position;
-    const flattenHeight = this.getHeightAt(x, z); // Use the building's height
-
-    for (let i = startX; i < endX; i++) {
-      for (let j = startZ; j < endZ; j++) {
-        const idx = i * this._size + j;
-        position.setZ(idx, flattenHeight);
-      }
-    }
-
-    position.needsUpdate = true;
-    this._mesh.geometry.computeVertexNormals();
   }
 }
 

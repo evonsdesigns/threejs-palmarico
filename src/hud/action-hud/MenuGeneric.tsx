@@ -1,4 +1,3 @@
-import React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
@@ -22,20 +21,22 @@ const tropicoButton = {
 };
 
 
-interface MenuGenericProps<T extends { id: string; name: string }> {
+interface MenuGenericProps<T extends { id: string; name: string; available?: boolean; description?: string }> {
   buttons: T[];
   onButtonClick: (id: string) => void;
 }
 
-const MenuGeneric = <T extends { id: string; name: string }>({ buttons, onButtonClick }: MenuGenericProps<T>) => (
-  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, width: 320, pl: 2 }}>
+const MenuGeneric = <T extends { id: string; name: string; available?: boolean; description?: string }>({ buttons, onButtonClick }: MenuGenericProps<T>) => (
+  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(75px, 1fr))', gap: 1, p: 1, overflow: 'auto', maxHeight: 140 }}>
     {buttons.map((btn) => (
       <Button
         key={btn.id}
         variant="contained"
         color="primary"
         id={btn.id}
-        sx={{ ...tropicoButton, width: 100 }}
+        disabled={btn.available === false}
+        title={btn.description}
+        sx={{ ...tropicoButton, minWidth: 0, minHeight: 42, '&.Mui-disabled': { opacity: 0.45, color: '#4a4a4a' } }}
         onClick={(event) => {
           event.stopPropagation();
           onButtonClick(btn.id);

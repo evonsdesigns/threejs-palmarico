@@ -4,7 +4,7 @@ import { Camera, Renderer, Vector3 } from 'three';
 export function createMapControls(camera: Camera, renderer: Renderer) {
     const controls = new MapControls(camera, renderer.domElement);
     controls.maxPolarAngle = Math.PI * 0.495;
-    controls.target.set(0, -10, 0);
+    controls.target.set(0, 5, 0);
     controls.maxZoom = 10.0;
     controls.minZoom = 0.2;
     controls.enableRotate = false;

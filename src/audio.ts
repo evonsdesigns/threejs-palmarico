@@ -7,7 +7,7 @@ function playMusic() {
 }
 
 // Function to pause the music
-function pauseMusic() {
+export function pauseMusic() {
   backgroundMusic.pause();
 }
 

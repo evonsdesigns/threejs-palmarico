@@ -24,7 +24,6 @@ const tropicoButton = {
 
 const MenuEdicts: React.FC = () => {
   const [subMenu, setSubMenu] = React.useState<EdictMenuSubMenuId>(EdictMenuSubMenuId.PeopleEdict);
-  let subMenuComponent;
   return (
     <Box sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
 

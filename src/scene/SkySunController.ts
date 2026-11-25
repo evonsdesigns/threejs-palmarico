@@ -6,14 +6,11 @@ export class SkySunController {
     public sun: THREE.Vector3;
     public uniforms: any;
     public sunlight: THREE.DirectionalLight; // <-- Add this
-    private pmremGenerator: THREE.PMREMGenerator;
     private scene: THREE.Scene;
-    private renderer: THREE.WebGLRenderer;
     private parameters = { elevation: 2, azimuth: 180 };
 
-    constructor(scene: THREE.Scene, renderer: THREE.WebGLRenderer) {
+    constructor(scene: THREE.Scene) {
         this.scene = scene;
-        this.renderer = renderer;
         this.sky = new Sky();
         this.sky.scale.setScalar(10000);
         this.scene.add(this.sky);
@@ -24,8 +21,6 @@ export class SkySunController {
         this.uniforms['rayleigh'].value = 2;
         this.uniforms['mieCoefficient'].value = 0.005;
         this.uniforms['mieDirectionalG'].value = 0.8;
-
-        this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
 
         // Add sunlight
         this.sunlight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -47,8 +42,6 @@ export class SkySunController {
 
         this.sun.setFromSphericalCoords(1, phi, theta);
         this.uniforms['sunPosition'].value.copy(this.sun);
-        this.scene.environment = this.pmremGenerator.fromScene(this.sky).texture;
-
         // Update sunlight position and direction
         this.sunlight.position.copy(this.sun.clone().multiplyScalar(1000));
         this.sunlight.target.position.set(0, 0, 0);

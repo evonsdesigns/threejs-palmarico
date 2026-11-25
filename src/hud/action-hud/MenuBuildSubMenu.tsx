@@ -66,7 +66,7 @@ const menus: BuildMenuSubMenuItem[] = [
 const MenuBuildSubMenu = (props: MenuBuildSubMenuProps) => {
   const { subMenu, setSubMenu } = props;
 
-  const handleSubMenuChange = (event: React.MouseEvent<HTMLElement>, newSubMenu: BuildMenuSubMenuId | null) => {
+  const handleSubMenuChange = (_event: React.MouseEvent<HTMLElement>, newSubMenu: BuildMenuSubMenuId | null) => {
     if (newSubMenu !== null) {
       setSubMenu(newSubMenu);
     }
@@ -82,6 +82,9 @@ const MenuBuildSubMenu = (props: MenuBuildSubMenuProps) => {
         sx={{
           alignItems: 'center',
           height: 48,
+          flexShrink: 0,
+          maxWidth: '100%',
+          overflowX: 'auto',
         }}
       >
         {menus.map((menu) => (
