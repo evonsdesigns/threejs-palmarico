@@ -99,7 +99,7 @@ export function buildTeamstersOffice(kit: Kit) {
   box(ROOF, CX, TOP + 0.06, CZ, W - 0.5, 0.12, D - 0.5);
   const roofTop = TOP + 0.12;
   for (let x = X0 + 1.1; x < X1 - 0.4; x += 0.95) box(0x4a5052, x, roofTop + 0.003, CZ, 0.05, 0.006, D - 0.55);
-  const patchColors = [0x2e3436, 0x3b4244, 0x30373a, 0x41474a, 0x2a2f31];
+  const patchColors = [0x2f3638, 0x3a4143, 0x30373a, 0x3d4446, 0x2c3234];
   for (let i = 0; i < 70; i++) {
     const w = 0.2 + rand() * 0.9;
     const d = 0.2 + rand() * 0.8;
@@ -180,7 +180,10 @@ export function buildTeamstersOffice(kit: Kit) {
     onFace(face, TILE_DARK, u, yc - h / 2 - 0.18, 0.07, w + 0.2, 0.06, 0.14);
     onFace(face, TILE, u, yc + h / 2 + 0.18, 0.08, w + 0.36, 0.16, 0.16);
     onFace(face, STONE_LIGHT, u, yc + h / 2 + 0.2, 0.1, 0.22, 0.26, 0.18);
-    for (const side of [-1, 1]) onFace(face, GRIME, u + side * (0.2 + rand() * 0.15), yc - h / 2 - 0.5, 0.004, 0.1, 0.55 + rand() * 0.3, 0.01);
+    for (const side of [-1, 1]) {
+      const streak = Math.min(0.4 + rand() * 0.3, yc - h / 2 - 0.4);
+      onFace(face, GRIME, u + side * (0.2 + rand() * 0.15), yc - h / 2 - 0.2 - streak / 2, 0.004, 0.1, streak, 0.01);
+    }
   };
   win(front, -2.5);
   win(front, -0.75);
@@ -237,7 +240,7 @@ export function buildTeamstersOffice(kit: Kit) {
   }
   box(WHITE, DX, postTop - 0.06, postZ, 2.6, 0.12, 0.12);
   box(0x3a3a38, DX, postTop - 0.22, Z1 + 0.2, 0.14, 0.2, 0.14);
-  box(0xf5e7a8, DX, postTop - 0.34, Z1 + 0.2, 0.1, 0.06, 0.1);
+  kit.litBox(0xf5e7a8, DX, postTop - 0.34, Z1 + 0.2, 0.1, 0.06, 0.1);
 
   // Pediment with the wheel emblem plaque.
   const pz = Z1 - 0.075;
@@ -296,18 +299,18 @@ export function buildTeamstersOffice(kit: Kit) {
   box(WALL, ACX, 2.4, AZ1 - 0.15, AW, 0.4, 0.3);
   box(WHITE, ACX, 2.2, AZ1 + 0.02, 2.5, 0.08, 0.06);
   // Shadowed interior.
-  box(0x8d877b, ACX, 0.36, ACZ + 0.1, 2.4, 0.02, AD - 0.5);
-  box(0x2a2622, ACX, 1.3, AZ0 + 0.31, 2.4, 1.9, 0.02);
-  box(0x3a342c, AX0 + 0.31, 1.3, ACZ + 0.1, 0.02, 1.9, AD - 0.5);
-  box(0x332e28, AX1 - 0.41, 1.3, ACZ + 0.1, 0.02, 1.9, AD - 0.5);
-  box(0x1e1b18, ACX, 2.19, ACZ + 0.1, 2.4, 0.02, AD - 0.5);
-  box(0x47413a, ACX - 0.6, 0.37, ACZ - 0.5, 0.8, 0.005, 1.0);
-  for (const [cx, cz, s] of [[-4.95, -2.6, 0.6], [-4.95, -2.6, 0.45], [-3.4, -2.8, 0.55]]) {
-    const y = s === 0.45 ? 0.95 : 0.37 + s / 2;
+  box(0x2a2622, ACX, 0.36, ACZ + 0.1, 2.4, 0.02, AD - 0.5);
+  box(0x171512, ACX, 1.3, AZ0 + 0.31, 2.4, 1.9, 0.02);
+  box(0x221f1b, AX0 + 0.31, 1.3, ACZ + 0.1, 0.02, 1.9, AD - 0.5);
+  box(0x1d1a17, AX1 - 0.41, 1.3, ACZ + 0.1, 0.02, 1.9, AD - 0.5);
+  box(0x100f0d, ACX, 2.19, ACZ + 0.1, 2.4, 0.02, AD - 0.5);
+  box(0x1a1815, ACX + 0.3, 0.372, ACZ + 0.4, 0.9, 0.005, 1.2);
+  for (const [cx, cz, s] of [[-4.85, 0.2, 0.6], [-4.85, 0.2, 0.45], [-4.8, -0.6, 0.55]]) {
+    const y = s === 0.45 ? 1.2 : 0.37 + s / 2;
     box(WOOD, cx, y, cz, s, s, s);
     box(WOOD_DARK, cx, y, cz + s / 2 + 0.01, s, 0.06, 0.02);
   }
-  for (const [dx, dz] of [[-3.6, -1.8], [-3.25, -1.3]]) solid(new THREE.CylinderGeometry(0.26, 0.26, 0.8, 10), 0x6f7f5a, dx, 0.77, dz);
+  for (const [dx, dz] of [[-3.3, 0.5], [-3.4, -0.2]]) solid(new THREE.CylinderGeometry(0.26, 0.26, 0.8, 10), 0x6f7f5a, dx, 0.77, dz);
   solid(new THREE.TorusGeometry(0.3, 0.11, 5, 12), 0x1f1f1f, -4.3, 1.4, AZ0 + 0.42);
   box(0x5a4a3a, -4.3, 1.8, AZ0 + 0.34, 1.6, 0.05, 0.08);
   // Garage roof and parapet.
@@ -329,7 +332,7 @@ export function buildTeamstersOffice(kit: Kit) {
   win(annexLeft, 0, 1.45, 0.8, 1.2);
   box(METAL, AX0 - 0.08, 1.4, AZ0 + 0.6, 0.12, 2.5, 0.12);
   // Open plank doors swung outward.
-  for (const [hx, dirX, dirZ] of [[-5.3, -0.36, 0.93], [-2.92, 0.22, 0.975]]) {
+  for (const [hx, dirX, dirZ] of [[-5.2, -0.36, 0.93], [-2.92, 0.22, 0.975]]) {
     const ry = Math.atan2(-dirZ, dirX);
     const door: Face = { x: hx + dirX * 0.6, z: AZ1 + 0.03 + dirZ * 0.6, yaw: ry };
     onFace(door, 0xe9e6dc, 0, 1.27, 0, 1.18, 1.82, 0.07);
@@ -341,7 +344,7 @@ export function buildTeamstersOffice(kit: Kit) {
     }
     for (const y of [0.7, 1.85]) beam(0x3a3a38, hx, y, AZ1 + 0.05, hx + dirX * 0.25, y, AZ1 + 0.05 + dirZ * 0.25, 0.05);
   }
-  box(CONCRETE, ACX, 0.19, AZ1 + 0.25, 2.4, 0.12, 0.5, -0.45);
+  box(CONCRETE, ACX, 0.22, AZ1 + 0.25, 2.3, 0.12, 0.5, 0.45);
 
   // ---------- Lattice radio mast ----------
   box(CONCRETE, MX, 0.15, MZ, 1.1, 0.3, 1.1);

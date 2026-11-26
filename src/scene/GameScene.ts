@@ -12,6 +12,9 @@ import { SkySunController } from "./SkySunController";
 import { createMapControls } from "./controls";
 import { createBuilding } from "./buildings";
 import { Residents } from "./residents";
+import { createPalmGrove } from "./palms";
+import { daylightAt } from "./daylight";
+import { BuildingLights } from "./building-lights";
 
 const FARM_FIELD_REACH = 2;
 const FARM_FIELD_TILES = 24;
@@ -21,9 +24,16 @@ class GameScene {
   public static get instance() { return this._instance; }
 
   private readonly scene = new THREE.Scene();
+  private readonly buildingLights = new BuildingLights(this.scene);
   private readonly renderer = new THREE.WebGLRenderer({ antialias: true });
   private readonly camera = createCamera();
   private readonly controls: MapControls;
+  private readonly sky: SkySunController;
+  private readonly ambientLight = new THREE.HemisphereLight(0xfff2d5, 0x4c6650, 1.5);
+  private readonly dayAmbient = new THREE.Color(0xfff2d5);
+  private readonly nightAmbient = new THREE.Color(0x9caec9);
+  private readonly dayGround = new THREE.Color(0x4c6650);
+  private readonly nightGround = new THREE.Color(0x536273);
   private readonly map = new GameMap(new THREE.Vector3(), 1024);
   private water!: WaterScene;
   private readonly raycaster = new THREE.Raycaster();
@@ -48,17 +58,22 @@ class GameScene {
   private ready = false;
   private settlementReady = false;
   private syncingShacks = false;
+  private dayElapsed = 0;
+  private shadowElapsed = 0;
 
   private constructor() {
     const target = document.querySelector<HTMLDivElement>("#app");
     if (!target) throw new Error("Unable to find game container");
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.autoUpdate = false;
     target.appendChild(this.renderer.domElement);
     this.controls = createMapControls(this.camera, this.renderer);
-    const sky = new SkySunController(this.scene);
-    sky.setParameters(50, 180);
-    this.scene.add(new THREE.HemisphereLight(0xfff2d5, 0x4c6650, 1.5));
+    this.sky = new SkySunController(this.scene);
+    this.scene.add(this.ambientLight);
+    this.updateDaylight(0);
     this.footprintOutline.visible = false;
     this.footprintOutline.renderOrder = 1;
     this.scene.add(this.footprintOutline);
@@ -81,6 +96,7 @@ class GameScene {
   public load = async () => {
     await ResourceManager.instance.load();
     await this.map.load();
+    this.map.mesh.receiveShadow = true;
     this.scene.add(this.map.mesh);
     this.map.mesh.updateMatrixWorld();
     this.water = new WaterScene(this.scene, (x, z) => this.map.sampleHeight(x, z), 1024);
@@ -102,8 +118,28 @@ class GameScene {
     const simulationDelta = game.advanceTime(delta);
     if (simulationDelta > 0) this.residents.update(simulationDelta, game.getSnapshot());
     this.controls.update();
+    this.updateDaylight(simulationDelta);
+    this.shadowElapsed += delta;
+    if (this.shadowElapsed >= 0.1) {
+      this.renderer.shadowMap.needsUpdate = true;
+      this.shadowElapsed = 0;
+    }
     this.renderer.render(this.scene, this.camera);
   };
+
+  private updateDaylight(delta: number) {
+    this.dayElapsed += delta;
+    const { elevation, azimuth, daylight } = daylightAt(this.dayElapsed);
+    this.sky.setParameters(elevation, azimuth);
+    this.sky.setTarget(this.controls.target);
+    this.sky.setShadowExtent(Math.max(120, Math.hypot(this.camera.right, this.camera.top * 1.8) / this.camera.zoom));
+    this.sky.sunlight.intensity = 1.2 * daylight;
+    this.ambientLight.intensity = 0.8 + 0.7 * daylight;
+    this.ambientLight.color.copy(this.nightAmbient).lerp(this.dayAmbient, daylight);
+    this.ambientLight.groundColor.copy(this.nightGround).lerp(this.dayGround, daylight);
+    this.buildingLights.update(daylight, this.controls.target);
+    if (this.water) this.water.setDaylight(daylight);
+  }
 
   public zoom(factor: number) {
     this.camera.zoom = THREE.MathUtils.clamp(this.camera.zoom * factor, this.controls.minZoom, this.controls.maxZoom);
@@ -186,12 +222,20 @@ class GameScene {
 
   private addPlacedModel(index: number, building: PlacedBuilding, site: THREE.Vector3) {
     const model = createBuilding(building.type, false, building.crop);
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
     model.position.copy(site);
     model.rotation.y = (building.rotation ?? 0) * Math.PI / 2;
     model.userData.buildingIndex = index;
     model.userData.crop = building.crop;
     this.placedModels[index] = model;
     this.scene.add(model);
+    const definition = buildings.find((item) => item.id === building.type)!;
+    this.buildingLights.add(model, definition.tiles[1] * GRID_TILE_SIZE / 2 - 0.6);
   }
 
   private syncPlacedModels = () => {
@@ -199,12 +243,17 @@ class GameScene {
       const model = this.placedModels[index];
       if (!model || building.type !== "farm" || model.userData.crop === building.crop) return;
       this.scene.remove(model);
+      this.buildingLights.remove(model);
       this.addPlacedModel(index, building, model.position);
       this.disposeBuilding(model);
     });
   };
 
   private createStartingSettlement() {
+    if (import.meta.env.DEV && !new URLSearchParams(window.location.search).has("normal-start")) {
+      this.createShowcase();
+      return;
+    }
     const placed: PlacedBuilding[] = [];
     for (const type of starterBuildings) {
       const definition = buildings.find((item) => item.id === type)!;
@@ -218,16 +267,41 @@ class GameScene {
     game.initializeIsland(placed);
   }
 
-  private findSite(definition: BuildingDefinition, placed: PlacedBuilding[]): THREE.Vector3 {
-    for (let ring = 0; ring <= 48; ring++) {
+  // Lays out one of every building in a grid of 10-tile cells, near each cell's center.
+  private createShowcase() {
+    const rows: BuildingType[][] = [
+      ["palace", "farm", "ranch", "market", "clinic"],
+      ["shack", "country-house", "house", "bungalow", "bunkhouse"],
+      ["luxury-house", "condominium", "apartment", "tenement"],
+      ["pub", "restaurant", "teamsters-office"],
+    ];
+    const missing = buildings.filter((item) => !rows.flat().includes(item.id));
+    if (missing.length) rows.push(missing.map((item) => item.id));
+    const cell = 10;
+    const placed: PlacedBuilding[] = [];
+    rows.forEach((row, rowIndex) => row.forEach((type, column) => {
+      const definition = buildings.find((item) => item.id === type)!;
+      const originX = (column - (row.length - 1) / 2) * cell;
+      const originZ = (rowIndex - (rows.length - 1) / 2) * cell;
+      const site = this.findSite(definition, placed, Math.round(originX), Math.round(originZ), 4);
+      const building: PlacedBuilding = { type, x: site.x, z: site.z };
+      if (type === "farm") building.crop = "corn";
+      placed.push(building);
+      this.addPlacedModel(placed.length - 1, building, site);
+    }));
+    game.initializeShowcase(placed);
+  }
+
+  private findSite(definition: BuildingDefinition, placed: PlacedBuilding[], originX = 0, originZ = 0, maxRing = 48): THREE.Vector3 {
+    for (let ring = 0; ring <= maxRing; ring++) {
       for (let x = -ring; x <= ring; x++) {
         for (let z = -ring; z <= ring; z++) {
           if (Math.max(Math.abs(x), Math.abs(z)) !== ring) continue;
-          const center = footprintCenter(footprintAt(x * GRID_TILE_SIZE, z * GRID_TILE_SIZE, ...definition.tiles));
+          const center = footprintCenter(footprintAt((originX + x) * GRID_TILE_SIZE, (originZ + z) * GRID_TILE_SIZE, ...definition.tiles));
           const height = this.terrainHeight(center.x, center.z);
           if (height === null) continue;
           const candidate = new THREE.Vector3(center.x, height, center.z);
-          if (!this.validate(candidate, definition, 0, placed, true)) return candidate;
+          if (!this.validate(candidate, definition, 0, placed, true, true)) return candidate;
         }
       }
     }
@@ -251,8 +325,7 @@ class GameScene {
   };
 
   private addTrees() {
-    const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x806344 });
-    const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x398055 });
+    const palms: { x: number; y: number; z: number; seed: number }[] = [];
     for (let x = -100; x <= 100; x += 22) {
       for (let z = -100; z <= 100; z += 22) {
         const seed = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
@@ -264,25 +337,14 @@ class GameScene {
         })) continue;
         const height = this.terrainHeight(px, pz);
         if (height === null || height < 2) continue;
-        const tree = new THREE.Group();
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.6, 6, 6), trunkMaterial);
-        trunk.position.y = 3;
-        tree.add(trunk);
-        for (let i = 0; i < 5; i++) {
-          const leaf = new THREE.Mesh(new THREE.ConeGeometry(1.1, 5, 4), leafMaterial);
-          const angle = i * Math.PI * 2 / 5;
-          leaf.position.set(Math.sin(angle) * 1.6, 6.2, Math.cos(angle) * 1.6);
-          leaf.rotation.set(Math.cos(angle) * 1.05, 0, -Math.sin(angle) * 1.05);
-          tree.add(leaf);
-        }
-        tree.position.set(px, height, pz);
-        this.scene.add(tree);
+        palms.push({ x: px, y: height, z: pz, seed });
         this.trees.push(new THREE.Vector2(px, pz));
       }
     }
+    this.scene.add(createPalmGrove(palms));
   }
 
-  private validate(point: THREE.Vector3, definition: BuildingDefinition, rotation: Rotation, placedBuildings = game.getSnapshot().placed, avoidFields = false): string | null {
+  private validate(point: THREE.Vector3, definition: BuildingDefinition, rotation: Rotation, placedBuildings = game.getSnapshot().placed, avoidFields = false, free = false): string | null {
     const footprint = footprintAt(point.x, point.z, ...rotatedTiles(definition.tiles, rotation));
     for (let x = 0; x <= footprint.sizeX; x++) {
       for (let z = 0; z <= footprint.sizeZ; z++) {
@@ -301,7 +363,7 @@ class GameScene {
         }
       }
     }
-    if (definition.cost > 0 && game.getSnapshot().money < definition.cost) return "Not enough treasury funds.";
+    if (!free && definition.cost > 0 && game.getSnapshot().money < definition.cost) return "Not enough treasury funds.";
     return null;
   }
 

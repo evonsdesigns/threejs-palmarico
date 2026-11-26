@@ -17,6 +17,12 @@ Building footprints and grid rules follow the Tropico 1 reference in
 
 ## Play
 
+When running the development server (`npm run dev`), the island starts as a
+developer showcase with one of every implemented building laid out in a grid
+for quick inspection. Open `http://127.0.0.1:5187/?normal-start` (or your dev
+URL with `?normal-start`) for the regular start described below; production
+builds always use the regular start.
+
 Each new island starts with a palace and a farm. Residents without housing
 automatically build shacks that shelter two people each, so the eight starting
 residents build four shacks. None of these starting buildings incur a construction charge.
@@ -41,6 +47,11 @@ keys to pan; scroll or use the minimap buttons to zoom. The minimap buttons also
 rotate the camera. In the stats panel, click the green bars to select game speed
 from 1× to 5×; the pause button pauses or resumes at the selected speed. The remaining building
 options and edicts are placeholders and are not implemented yet.
+
+The visual day–night cycle lasts two minutes at 1× speed, follows the selected
+simulation speed and pauses with the game. Buildings and palms cast sunlight
+shadows; the water darkens at night. Windows and lamps glow after dusk, with
+local exterior lighting on buildings near the camera.
 
 Open the music player with the music-note button in the bottom-right panel.
 Playback starts when you press Play and continues independently of simulation

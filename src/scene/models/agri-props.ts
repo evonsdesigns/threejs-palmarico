@@ -12,6 +12,15 @@ export function agriProps(kit: Kit) {
     box(color, cx + lx * c + lz * s, cy + ly, cz - lx * s + lz * c, w, h, d, rx, yaw + ry);
   };
 
+  // Box from (x, y, z) heading psi (0 = +z) and pitched down by phi; returns the far end.
+  const ray = (color: number, x: number, y: number, z: number, psi: number, phi: number, len: number, w: number, h: number) => {
+    const dx = Math.sin(psi) * Math.cos(phi);
+    const dy = -Math.sin(phi);
+    const dz = Math.cos(psi) * Math.cos(phi);
+    box(color, x + dx * len / 2, y + dy * len / 2, z + dz * len / 2, w, h, len, Math.atan2(-dy, dz), Math.asin(dx));
+    return [x + dx * len, y + dy * len, z + dz * len] as const;
+  };
+
   const crate = (x: number, y: number, z: number, w: number, h: number, d: number, fill?: number, fillAccent?: number) => {
     box(0xb28b60, x, y + h / 2, z, w, h, d);
     for (const dy of [0.2, 0.55, 0.85]) {
@@ -213,7 +222,7 @@ export function agriProps(kit: Kit) {
     yawBox(0xd9a040, x, 0.08, z, yaw, 0, 0, 0, 0.1, 0.16, 0.03);
   };
 
-  return { yawBox, crate, sack, barrel, hayBale, wheelbarrow, basket, bananaBunch, fence, cow, braceXY, braceYZ, shedRoof, gableTrim, door, shutters, flowerBox, chicken };
+  return { yawBox, ray, crate, sack, barrel, hayBale, wheelbarrow, basket, bananaBunch, fence, cow, braceXY, braceYZ, shedRoof, gableTrim, door, shutters, flowerBox, chicken };
 }
 
 export type AgriProps = ReturnType<typeof agriProps>;

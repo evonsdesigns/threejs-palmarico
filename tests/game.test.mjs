@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildingFootprint, GameState, planResidents, starterBuildings } from "../src/logic/game.ts";
+import { buildingFootprint, buildings, GameState, planResidents, starterBuildings } from "../src/logic/game.ts";
 
 test("the starting settlement adds housing and production without construction charges", () => {
   const game = new GameState();
@@ -18,6 +18,17 @@ test("the starting settlement adds housing and production without construction c
   assert.equal(game.place("shack", 200, 0), false);
   assert.equal(game.addShack(200, 0), false);
   assert.throws(() => game.initializeIsland(placed), /already been initialized/);
+});
+
+test("the developer showcase requires exactly one of every building", () => {
+  const all = buildings.map((item, index) => ({ type: item.id, x: index * 40, z: 0 }));
+  assert.throws(() => new GameState().initializeShowcase(all.slice(1)), /exactly one of every building/);
+  assert.throws(() => new GameState().initializeShowcase([...all.slice(1), all[1]]), /exactly one of every building/);
+  const game = new GameState();
+  game.initializeShowcase(all);
+  assert.deepEqual(game.getSnapshot().placed.map((item) => item.type), buildings.map((item) => item.id));
+  assert.equal(game.getSnapshot().money, 3000);
+  assert.throws(() => game.initializeShowcase(all), /already been initialized/);
 });
 
 test("construction charges the treasury and rejects unaffordable buildings", () => {

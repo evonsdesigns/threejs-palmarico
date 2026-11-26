@@ -260,6 +260,21 @@ export class GameState {
     });
   }
 
+  /** Developer start: one of every building, so models can be inspected side by side. */
+  initializeShowcase(placed: PlacedBuilding[]) {
+    if (this.initialized) throw new Error("The island has already been initialized.");
+    const types = placed.map((item) => item.type);
+    if (types.length !== buildings.length || buildings.some((item) => !types.includes(item.id))) {
+      throw new Error("The showcase must contain exactly one of every building.");
+    }
+    this.initialized = true;
+    this.update({
+      placed: placed.map((item) => ({ ...item })),
+      ...calculate(placed, this.state.population),
+      notice: "Developer showcase: one of every building. Add ?normal-start to the URL for a regular island.",
+    });
+  }
+
   addShack(x: number, z: number): boolean {
     if (this.state.housing >= this.state.population) return false;
     const placed = [...this.state.placed, { type: "shack" as const, x, z }];

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { buildingSurface, buildingTexture } from "../building-textures";
+import { markNightMaterial } from "../building-lights";
 
 export function createKit(ghost: boolean) {
   const group = new THREE.Group();
@@ -9,10 +10,11 @@ export function createKit(ghost: boolean) {
     0, 0, -0.5, 0, 0, 0.5, 0, 1, 0,
   ], 3));
   gableEnd.computeVertexNormals();
-  const batches = new Map<number, { material: THREE.MeshStandardMaterial; matrices: THREE.Matrix4[] }>();
+  const batches = new Map<string, { material: THREE.MeshStandardMaterial; matrices: THREE.Matrix4[] }>();
   const transform = new THREE.Object3D();
-  const box = (color: number, x: number, y: number, z: number, w: number, h: number, d: number, rx = 0, ry = 0) => {
-    let batch = batches.get(color);
+  const addBox = (color: number, x: number, y: number, z: number, w: number, h: number, d: number, rx = 0, ry = 0, lit = false) => {
+    const key = `${color}:${lit}`;
+    let batch = batches.get(key);
     if (!batch) {
       batch = {
         material: new THREE.MeshStandardMaterial({
@@ -22,7 +24,8 @@ export function createKit(ghost: boolean) {
         }),
         matrices: [],
       };
-      batches.set(color, batch);
+      if (lit && !ghost) markNightMaterial(batch.material);
+      batches.set(key, batch);
     }
     transform.position.set(x, y, z);
     transform.rotation.set(rx, ry, 0);
@@ -30,6 +33,10 @@ export function createKit(ghost: boolean) {
     transform.updateMatrix();
     batch.matrices.push(transform.matrix.clone());
   };
+  const box = (color: number, x: number, y: number, z: number, w: number, h: number, d: number, rx = 0, ry = 0) =>
+    addBox(color, x, y, z, w, h, d, rx, ry);
+  const litBox = (color: number, x: number, y: number, z: number, w: number, h: number, d: number, rx = 0, ry = 0) =>
+    addBox(color, x, y, z, w, h, d, rx, ry, true);
   const gable = (x: number, z: number, width: number, depth: number, y: number, rise: number, color: number, seams: number) => {
     const half = depth / 2;
     const angle = Math.atan2(rise, half);
@@ -62,7 +69,7 @@ export function createKit(ghost: boolean) {
     const oz = Math.cos(facing);
     box(0x514a40, x, y, z, width + 0.3, height + 0.3, 0.08, 0, facing);
     box(0xe4ddca, x + ox * 0.05, y, z + oz * 0.05, width + 0.2, height + 0.2, 0.1, 0, facing);
-    box(0x526e6b, x + ox * 0.12, y, z + oz * 0.12, width, height, 0.06, 0, facing);
+    litBox(0x526e6b, x + ox * 0.12, y, z + oz * 0.12, width, height, 0.06, 0, facing);
     box(0xdcd6c7, x + ox * 0.16, y, z + oz * 0.16, 0.07, height, 0.04, 0, facing);
     box(0xdcd6c7, x + ox * 0.16, y, z + oz * 0.16, width, 0.07, 0.04, 0, facing);
     box(0xddd4bd, x + ox * 0.15, y - height / 2 - 0.12, z + oz * 0.15, width + 0.35, 0.12, 0.25, 0, facing);
@@ -130,7 +137,7 @@ export function createKit(ghost: boolean) {
     }
     return group;
   };
-  return { group, ghost, box, gable, window, frontWindow, backWindow, leftWindow, porch, cottage, solid, finish };
+  return { group, ghost, box, litBox, gable, window, frontWindow, backWindow, leftWindow, porch, cottage, solid, finish };
 }
 
 export type Kit = ReturnType<typeof createKit>;

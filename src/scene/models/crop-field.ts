@@ -80,20 +80,19 @@ export function buildCropField(kit: Kit, crop: FarmCrop, tiles: readonly CropTil
           at(cx + rx + (hash(cx + rx, cz + rz, 1) - 0.5) * 0.12, cz + rz + (hash(cx + rx, cz + rz, 2) - 0.5) * 0.1);
           const height = 1.9 + rnd(3) * 0.45;
           const stalk = rnd(4) > 0.75 ? 0x8f9a4c : 0x6f8f3f;
-          p(stalk, px, 0.18 + height / 2, pz, 0.1, height, 0.1);
+          p(stalk, px, 0.18 + height / 2, pz, 0.13, height, 0.13);
           const base = rnd(5) * Math.PI * 2;
           for (let i = 0; i < 5; i++) {
             const y = 0.5 + i * (height - 0.75) / 5;
             const psi = base + i * Math.PI + (rnd(10 + i) - 0.5) * 0.9;
-            const colour = i < 2 && rnd(20 + i) > 0.5 ? 0xa59a58 : i % 2 ? 0x6d9a3f : 0x7fa848;
-            const [ex, ey, ez] = seg(colour, px, 0.18 + y, pz, psi, i < 4 ? -0.35 : -0.9, i < 4 ? 0.38 : 0.45, 0.1, 0.04);
-            if (i < 4) seg(colour, ex, ey, ez, psi, 0.75, 0.32, 0.09, 0.04);
+            const colour = i < 2 && rnd(20 + i) > 0.7 ? 0xa59a58 : i % 2 ? 0x5f8f38 : 0x74a443;
+            const [ex, ey, ez] = seg(colour, px, 0.18 + y, pz, psi, i < 4 ? -0.4 : -0.9, i < 4 ? 0.42 : 0.5, 0.17, 0.035, true);
+            if (i < 4) seg(colour, ex, ey, ez, psi, 0.7, 0.38, 0.14, 0.035, true);
           }
           if (rnd(6) > 0.15) {
             const side = rnd(7) > 0.5 ? 1 : -1;
             p(0x9fb760, px + side * 0.1, 0.18 + height * 0.55, pz, 0.13, 0.38, 0.13);
             p(0xe0c25a, px + side * 0.12, 0.18 + height * 0.55 + 0.05, pz + 0.04, 0.08, 0.22, 0.09);
-            p(0x8a5a35, px + side * 0.1, 0.18 + height * 0.55 + 0.24, pz, 0.05, 0.1, 0.05);
           }
           p(0xd8c27a, px, 0.18 + height + 0.2, pz, 0.05, 0.4, 0.05);
           p(0xc9b06a, px, 0.18 + height + 0.12, pz, 0.36, 0.04, 0.04, 0, base);
@@ -124,28 +123,29 @@ export function buildCropField(kit: Kit, crop: FarmCrop, tiles: readonly CropTil
         }
       }
     } else if (crop === "coffee") {
-      const rows = [-1.3, 0, 1.3];
+      const rows = [-1.25, 0, 1.25];
       soil(rows, 0.7);
       for (const rz of rows) {
-        for (const rx of [-1.3, 0, 1.3]) {
+        for (const rx of [-1.2, 0, 1.2]) {
           at(cx + rx + (hash(cx + rx, cz + rz, 1) - 0.5) * 0.1, cz + rz + (hash(cx + rx, cz + rz, 2) - 0.5) * 0.1);
           const s = 0.9 + rnd(3) * 0.2;
           p(0x6a5136, px, 0.4, pz, 0.1, 0.5, 0.1);
           p(0x5a4a33, px, 0.21, pz, 0.62, 0.04, 0.62);
-          const tiers = [[0.75, 1.0, 0x3d6634], [1.15, 0.82, 0x4a7a3c], [1.5, 0.56, 0x3f6d36], [1.78, 0.28, 0x55843f]] as const;
+          const tiers = [[0.7, 0.95, 0x3d6634], [1.05, 0.92, 0x4a7a3c], [1.38, 0.72, 0x3f6d36], [1.62, 0.36, 0x55843f]] as const;
           for (const [y, size, colour] of tiers) {
-            p(colour, px, y * s, pz, size * s, 0.36 * s, size * s * 0.72, 0, rnd(4) * 0.4);
-            p(colour === 0x3d6634 ? 0x48733a : 0x3a6232, px, y * s + 0.04, pz, size * s * 0.72, 0.3 * s, size * s, 0, Math.PI / 4 + rnd(4) * 0.4);
+            p(colour, px, y * s, pz, size * s, 0.38 * s, size * s * 0.75, 0, rnd(4) * 0.6);
+            p(colour === 0x3d6634 ? 0x48733a : 0x3a6232, px, y * s + 0.05, pz, size * s * 0.75, 0.32 * s, size * s, 0, Math.PI / 4 + rnd(5) * 0.6);
           }
           for (let i = 0; i < 4; i++) {
-            const psi = i * Math.PI / 2 + Math.PI / 4 + (rnd(10 + i) - 0.5) * 0.3;
-            seg(0x456f38, px, 0.85 * s, pz, psi, 0.35, 0.48, 0.2, 0.08, true);
+            const psi = i * Math.PI / 2 + Math.PI / 4 + (rnd(10 + i) - 0.5) * 0.5;
+            seg(i % 2 ? 0x4f8040 : 0x456f38, px, 0.95 * s, pz, psi, 0.3, 0.62, 0.22, 0.06, true);
           }
-          const berries = [0xb3362a, 0x8c2a22, 0xc94a2c, 0x8fa040, 0xb3362a, 0x9c3a26];
-          for (let i = 0; i < 6; i++) {
-            const a = i * 1.05 + rnd(40) * 2;
-            const r = (0.36 - (i % 3) * 0.07) * s;
-            p(berries[i], px + Math.sin(a) * r, (0.72 + (i % 3) * 0.33) * s, pz + Math.cos(a) * r, 0.1, 0.13, 0.1);
+          const berries = [0xc0392b, 0x8c2a22, 0xd04a2c, 0x8fa040, 0xb3362a, 0x9c3a26, 0xc0392b, 0x7a2a22];
+          for (let i = 0; i < 8; i++) {
+            const a = i * 0.785 + rnd(40) * 0.6;
+            const tier = i % 2;
+            const r = (tier ? 0.5 : 0.54) * s;
+            p(berries[i], px + Math.sin(a) * r, (0.72 + tier * 0.35 + (rnd(50 + i) - 0.5) * 0.15) * s, pz + Math.cos(a) * r, 0.13, 0.13, 0.13, 0, a);
           }
           if (rnd(8) > 0.5) p(0xf1ede0, px - 0.2 * s, 1.35 * s, pz + 0.25 * s, 0.09, 0.06, 0.09);
         }
@@ -160,15 +160,15 @@ export function buildCropField(kit: Kit, crop: FarmCrop, tiles: readonly CropTil
           for (let i = 0; i < 3; i++) {
             const psi = i * 2.1 + rnd(10 + i) * 0.8;
             const lean = -Math.PI / 2 + 0.06 + rnd(20 + i) * 0.1;
-            const colour = rnd(30 + i) > 0.6 ? 0x8b7058 : i === 1 ? 0xa3a453 : 0x8f9b4a;
+            const colour = rnd(30 + i) > 0.75 ? 0x8b7058 : i === 1 ? 0xa3a453 : 0x8f9b4a;
             const h = height * (0.85 + i * 0.07);
             const [tx, ty, tz] = seg(colour, px, 0.18, pz, psi, lean, h, 0.08, 0.08);
             p(0x6f6a3c, px + (tx - px) * 0.45, 0.18 + (ty - 0.18) * 0.45, pz + (tz - pz) * 0.45, 0.1, 0.04, 0.1);
-            if (i < 2) seg(0x79a04a, tx, ty - 0.1, tz, psi + Math.PI * i, 0.25, 0.65, 0.09, 0.035);
+            if (i < 2) seg(0x79a04a, tx, ty - 0.1, tz, psi + Math.PI * i, 0.35, 0.7, 0.14, 0.03, true);
           }
           const top = 0.18 + height * 0.92;
-          seg(0x6c9442, px, top, pz, rnd(5) * Math.PI * 2, 0.1, 0.6, 0.09, 0.035);
-          seg(0x86ad52, px, top - 0.3, pz, rnd(6) * Math.PI * 2, 0.45, 0.6, 0.09, 0.035);
+          seg(0x6c9442, px, top, pz, rnd(5) * Math.PI * 2, -0.3, 0.65, 0.14, 0.03, true);
+          seg(0x86ad52, px, top - 0.3, pz, rnd(6) * Math.PI * 2, 0.45, 0.7, 0.14, 0.03, true);
           seg(0xa8915a, px, 0.6, pz, rnd(7) * Math.PI * 2, 0.9, 0.45, 0.1, 0.03);
         }
       }
@@ -185,10 +185,10 @@ export function buildCropField(kit: Kit, crop: FarmCrop, tiles: readonly CropTil
             const tier = Math.floor(i / 2);
             const y = 0.32 + tier * height * 0.27;
             const psi = base + (i % 2) * Math.PI + tier * 0.35;
-            const size = 0.62 - tier * 0.13;
-            const colour = tier === 0 && rnd(10 + i) > 0.55 ? 0xb5aa5a : tier === 2 ? 0x8fb35a : 0x76a04a;
-            const [ex, ey, ez] = seg(colour, px, y, pz, psi, 0.12, size * 0.55, 0.34 - tier * 0.05, 0.04, true);
-            seg(colour === 0x76a04a ? 0x6a9443 : colour, ex, ey, ez, psi, 0.55, size * 0.45, 0.27 - tier * 0.05, 0.04, true);
+            const size = 0.72 - tier * 0.15;
+            const colour = tier === 0 && rnd(10 + i) > 0.75 ? 0xb5aa5a : tier === 2 ? 0x8fb35a : 0x76a04a;
+            const [ex, ey, ez] = seg(colour, px, y, pz, psi, 0.05, size * 0.55, 0.5 - tier * 0.08, 0.04, true);
+            seg(colour === 0x76a04a ? 0x6a9443 : colour, ex, ey, ez, psi, 0.4, size * 0.45, 0.4 - tier * 0.08, 0.04, true);
           }
           p(0x8fb35a, px, 0.18 + height, pz, 0.2, 0.18, 0.2, 0, base);
           if (rnd(5) > 0.3) {
@@ -216,8 +216,8 @@ export function buildCropField(kit: Kit, crop: FarmCrop, tiles: readonly CropTil
             const lower = i % 2 === 1;
             const [ex, ey, ez] = seg(0x9fb36a, px, top - (lower ? 0.25 : 0.05), pz, psi, lower ? 0.05 : -0.45, 0.62, 0.05, 0.05);
             const blade = lower ? 0x4f8a3f : 0x5f9a48;
-            seg(blade, ex, ey, ez, psi, 0.35, 0.38, 0.42, 0.04, true);
-            seg(blade, ex, ey + 0.02, ez, psi + 0.6, 0.35, 0.25, 0.2, 0.04, true);
+            seg(blade, ex, ey, ez, psi, 0.35, 0.48, 0.55, 0.04, true);
+            seg(blade, ex, ey + 0.02, ez, psi + 0.7, 0.35, 0.32, 0.3, 0.04, true);
           }
           seg(0x8c7c4d, px, top - 0.35, pz, rnd(15) * Math.PI * 2, 1.15, 0.6, 0.05, 0.05);
           for (let i = 0; i < 7; i++) {
@@ -239,15 +239,15 @@ export function buildCropField(kit: Kit, crop: FarmCrop, tiles: readonly CropTil
         p(0x7f9a52, px, 0.2 + height * 0.78, pz, 0.24, height * 0.4, 0.24);
         p(0x5d5a35, px + 0.13, 0.2 + height * 0.25, pz + 0.1, 0.08, height * 0.4, 0.14);
         const top = 0.2 + height;
-        for (let i = 0; i < 7; i++) {
-          const psi = i * 2 * Math.PI / 7 + rnd(10 + i) * 0.5;
+        for (let i = 0; i < 6; i++) {
+          const psi = i * Math.PI / 3 + rnd(10 + i) * 0.6;
           const blade = i === 3 ? 0x9a8a4a : i % 2 ? 0x5f9a42 : 0x72aa4c;
-          const [ax, ay, az] = seg(0x86a050, px, top - 0.1, pz, psi, -0.9, 0.35, 0.06, 0.06);
-          const [bx, by, bz] = seg(blade, ax, ay, az, psi, -0.15, 0.55, 0.42, 0.04, true);
-          seg(blade, bx, by, bz, psi, 0.6, 0.45, 0.38, 0.04, true);
-          p(0x6b8a3a, (ax + bx) / 2, (ay + by) / 2 + 0.03, (az + bz) / 2, 0.05, 0.04, 0.05);
+          const lift = i % 2 ? -0.75 : -0.45;
+          const [ax, ay, az] = seg(0x86a050, px, top - 0.1, pz, psi, -1.1, 0.35, 0.08, 0.08);
+          const [bx, by, bz] = seg(blade, ax, ay, az, psi, lift, 0.7, 0.34, 0.06);
+          seg(i === 3 ? 0x8a7a48 : i % 2 ? 0x6aa646 : 0x5a9040, bx, by, bz, psi, 0.55, 0.65, 0.3, 0.06);
         }
-        seg(0x8a7a48, px, top - 0.4, pz, rnd(20) * Math.PI * 2, 1.2, 0.8, 0.3, 0.04, true);
+        seg(0x8a7a48, px, top - 0.4, pz, rnd(20) * Math.PI * 2, 1.25, 0.8, 0.22, 0.05);
         if (rnd(4) > 0.2) {
           const psi = rnd(5) * Math.PI * 2;
           const [hx, hy, hz] = seg(0x6b7a3a, px, top - 0.35, pz, psi, 0.4, 0.4, 0.06, 0.06);

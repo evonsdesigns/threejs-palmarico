@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 export class WaterScene {
   private readonly time = { value: 0 };
+  private readonly daylight = { value: 1 };
 
   constructor(scene: THREE.Scene, heightAt: (x: number, z: number) => number | null, terrainSize: number) {
     const resolution = 257;
@@ -22,6 +23,7 @@ export class WaterScene {
     const material = new THREE.MeshBasicMaterial();
     material.onBeforeCompile = (shader) => {
       shader.uniforms.waterTime = this.time;
+      shader.uniforms.daylight = this.daylight;
       shader.uniforms.terrainDepth = { value: depth };
       shader.uniforms.terrainSize = { value: terrainSize };
       shader.uniforms.shallowColor = { value: new THREE.Color(0x279987) };
@@ -35,6 +37,7 @@ export class WaterScene {
           uniform sampler2D terrainDepth;
           uniform float terrainSize;
           uniform float waterTime;
+          uniform float daylight;
           uniform vec3 shallowColor;
           uniform vec3 deepColor;
           float waterHash(vec2 p) {
@@ -56,7 +59,8 @@ export class WaterScene {
           float variation = waterNoise(vWaterPosition * 0.035);
           float ripples = waterNoise(vWaterPosition * 0.8 + vec2(waterTime * 0.08, waterTime * 0.05));
           diffuseColor.rgb = mix(shallowColor, deepColor, smoothstep(0.05, 0.85, depth));
-          diffuseColor.rgb *= mix(0.92, 1.08, variation) * mix(0.96, 1.04, ripples);`);
+          diffuseColor.rgb *= mix(0.92, 1.08, variation) * mix(0.96, 1.04, ripples);
+          diffuseColor.rgb *= mix(vec3(0.4, 0.52, 0.65), vec3(1.0), daylight);`);
     };
     const water = new THREE.Mesh(new THREE.PlaneGeometry(2048, 2048), material);
     water.rotation.x = -Math.PI / 2;
@@ -65,5 +69,9 @@ export class WaterScene {
 
   update(delta: number) {
     this.time.value += delta;
+  }
+
+  setDaylight(daylight: number) {
+    this.daylight.value = daylight;
   }
 }

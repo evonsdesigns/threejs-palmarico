@@ -106,12 +106,16 @@ export function wall(kit: Kit, sh: Shapes, facing: number, x0: number, z0: numbe
     const [x, z] = at(u, n);
     kit.box(color, x, y, z, w, h, d, 0, facing + yaw);
   };
+  const litBox = (color: number, u: number, y: number, n: number, w: number, h: number, d: number, yaw = 0) => {
+    const [x, z] = at(u, n);
+    kit.litBox(color, x, y, z, w, h, d, 0, facing + yaw);
+  };
   /** Box rolled within the wall plane (diagonal braces) and/or pitched away from the wall. */
   const slant = (color: number, u: number, y: number, n: number, w: number, h: number, d: number, roll: number, pitch = 0) => {
     const [x, z] = at(u, n);
     sh.box(color, x, y, z, w, h, d, pitch, facing, roll);
   };
-  return { box, slant, at, facing };
+  return { box, litBox, slant, at, facing };
 }
 
 /** A straight sloped plane along z from (z1,y1) to (z2,y2) with z2 > z1; helpers place boxes on it. */
@@ -193,7 +197,7 @@ export function shutteredWindow(kit: Kit, sh: Shapes, x: number, y: number, z: n
   facing: number, st: WindowStyle) {
   const f = wall(kit, sh, facing, x, z);
   f.box(0x24282a, 0, y, 0.01, w, h, 0.04);
-  f.box(st.glass, 0, y, 0.035, w - 0.06, h - 0.06, 0.03);
+  f.litBox(st.glass, 0, y, 0.035, w - 0.06, h - 0.06, 0.03);
   f.slant(0x9cc0c4, -w * 0.12, y + h * 0.08, 0.055, 0.07, h * 0.7, 0.01, 0.45);
   if (st.panes !== false) {
     f.box(st.muntin, 0, y, 0.06, 0.06, h, 0.04);
@@ -248,7 +252,7 @@ export function door(kit: Kit, sh: Shapes, x: number, y0: number, z: number, w: 
   f.box(st.frame, 0, y0 + h + 0.24, 0.09, w + 0.48, 0.08, 0.16);
   if (st.transom) {
     f.box(st.frame, 0, y0 + h + 0.55, 0.05, w + 0.34, 0.5, 0.08);
-    f.box(st.glass ?? 0x526e6b, 0, y0 + h + 0.53, 0.09, w - 0.08, 0.32, 0.03);
+    f.litBox(st.glass ?? 0x526e6b, 0, y0 + h + 0.53, 0.09, w - 0.08, 0.32, 0.03);
     for (const du of [-w / 4, 0, w / 4]) f.box(st.frame, du, y0 + h + 0.53, 0.11, 0.04, 0.32, 0.03);
     f.box(st.frame, 0, y0 + h + 0.84, 0.1, w + 0.48, 0.08, 0.16);
   }
@@ -261,7 +265,7 @@ export function door(kit: Kit, sh: Shapes, x: number, y0: number, z: number, w: 
   const panel = st.panel ?? st.leaf;
   for (const n of [-1, 1]) {
     if (st.glass !== undefined) {
-      leaf.box(st.glass, 0, y0 + h * 0.72, n * 0.04, lw * 0.62, h * 0.32, 0.02);
+      leaf.litBox(st.glass, 0, y0 + h * 0.72, n * 0.04, lw * 0.62, h * 0.32, 0.02);
       for (const du of [-lw * 0.1, lw * 0.1]) leaf.box(panel, du, y0 + h * 0.72, n * 0.05, 0.04, h * 0.32, 0.02);
     } else {
       for (const du of [-lw / 4.4, lw / 4.4]) leaf.box(panel, du, y0 + h * 0.72, n * 0.045, lw * 0.32, h * 0.3, 0.025);
@@ -354,20 +358,20 @@ export function palm(sh: Shapes, x: number, z: number, topX: number, topZ: numbe
   }
   const random = rng(seed);
   for (let c = 0; c < 3; c++) sh.ball(0x5b4a2a, topX + Math.cos(c * 2.1) * 0.15, height - 0.15, topZ + Math.sin(c * 2.1) * 0.15, 0.13);
-  const fronds = 8;
+  const fronds = 10;
   for (let i = 0; i < fronds; i++) {
     const yaw = i * Math.PI * 2 / fronds + random() * 0.3;
     let fx = topX;
     let fy = height + 0.05;
     let fz = topZ;
-    let pitch = -0.35 + random() * 0.2;
-    const seg = frondLen / 3;
-    for (let k = 0; k < 3; k++) {
+    let pitch = -0.4 + random() * 0.25 + (i % 2) * 0.2;
+    const seg = frondLen / 4;
+    for (let k = 0; k < 4; k++) {
       const dir = [Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)];
       const cx = fx + dir[0] * seg / 2;
       const cy = fy + dir[1] * seg / 2;
       const cz = fz + dir[2] * seg / 2;
-      const width = 0.62 - k * 0.14;
+      const width = 0.46 - k * 0.09;
       const color = (i + k) % 2 ? frond : frondDark;
       for (const roll of [-0.45, 0.45]) {
         sh.box(color, cx + Math.cos(yaw) * Math.sign(roll) * width / 4, cy - 0.04, cz - Math.sin(yaw) * Math.sign(roll) * width / 4,
@@ -376,7 +380,7 @@ export function palm(sh: Shapes, x: number, z: number, topX: number, topZ: numbe
       fx += dir[0] * seg;
       fy += dir[1] * seg;
       fz += dir[2] * seg;
-      pitch += 0.38;
+      pitch += 0.3;
     }
   }
 }
@@ -404,24 +408,29 @@ export function crate(kit: Kit, x: number, y0: number, z: number, s: number, yaw
   kit.box(edge, x, y0 + s + 0.01, z, s + 0.02, 0.02, 0.07, 0, yaw);
 }
 
-/** Hanging laundry along a straight line between two posts (along x). */
-export function laundry(kit: Kit, x1: number, x2: number, z: number, y: number, post: number, colors: number[]) {
-  for (const x of [x1, x2]) {
-    kit.box(post, x, y / 2, z, 0.1, y + 0.05, 0.1);
-    kit.box(post, x, y - 0.05, z, 0.1, 0.06, 0.5);
+/** Clothesline between posts at (x1,z1) and (x2,z2) with hanging laundry. */
+export function laundry(kit: Kit, x1: number, z1: number, x2: number, z2: number, y: number, post: number, colors: number[]) {
+  const len = Math.hypot(x2 - x1, z2 - z1);
+  const dx = (x2 - x1) / len;
+  const dz = (z2 - z1) / len;
+  const yaw = Math.atan2(dx, dz) - Math.PI / 2;
+  for (const [x, z] of [[x1, z1], [x2, z2]]) {
+    kit.box(post, x, y / 2, z, 0.1, y + 0.05, 0.1, 0, yaw);
+    kit.box(post, x, y - 0.05, z, 0.07, 0.06, 0.38, 0, yaw);
   }
-  kit.box(0xe8e2d0, (x1 + x2) / 2, y - 0.02, z, Math.abs(x2 - x1), 0.02, 0.02);
-  const span = Math.abs(x2 - x1);
+  kit.box(0xe8e2d0, (x1 + x2) / 2, y - 0.02, (z1 + z2) / 2, len, 0.02, 0.02, 0, yaw);
   const n = colors.length;
   for (let i = 0; i < n; i++) {
-    const x = Math.min(x1, x2) + span * (i + 0.75) / (n + 0.5);
+    const d = len * (i + 0.75) / (n + 0.5);
+    const x = x1 + dx * d;
+    const z = z1 + dz * d;
     const kind = i % 3;
     const w = kind === 0 ? 0.46 : kind === 1 ? 0.36 : 0.5;
     const h = kind === 0 ? 0.55 : kind === 1 ? 0.75 : 0.42;
-    kit.box(colors[i], x, y - 0.04 - h / 2, z, w, h, 0.03, 0.04 * (i % 2 ? 1 : -1));
-    if (kind === 0) for (const e of [-1, 1]) kit.box(colors[i], x + e * 0.3, y - 0.22, z, 0.16, 0.28, 0.03);
-    if (kind === 1) kit.box(0x2c2a27, x, y - 0.04 - h * 0.55, z + 0.02, 0.02, h * 0.9, 0.01);
-    for (const e of [-1, 1]) kit.box(0xd8c8a0, x + e * w * 0.38, y - 0.01, z, 0.03, 0.09, 0.05);
+    kit.box(colors[i], x, y - 0.04 - h / 2, z, w, h, 0.03, 0, yaw + (i % 2 ? 0.05 : -0.05));
+    if (kind === 0) for (const e of [-1, 1]) kit.box(colors[i], x + dx * e * 0.3, y - 0.22, z + dz * e * 0.3, 0.16, 0.28, 0.03, 0, yaw);
+    if (kind === 1) kit.box(0x2c2a27, x, y - 0.04 - h * 0.55, z, 0.02, h * 0.9, 0.05, 0, yaw);
+    for (const e of [-1, 1]) kit.box(0xd8c8a0, x + dx * e * w * 0.38, y - 0.01, z + dz * e * w * 0.38, 0.03, 0.09, 0.05, 0, yaw);
   }
 }
 

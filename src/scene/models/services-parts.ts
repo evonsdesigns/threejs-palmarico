@@ -56,7 +56,7 @@ export function stringLights(kit: Kit, a: Vec3, b: Vec3, sag: number, bulbs: num
   for (let i = 1; i <= bulbs; i++) {
     const p = point(i / (bulbs + 1));
     kit.box(0x2f2c28, p[0], p[1] - 0.04, p[2], 0.05, 0.06, 0.05);
-    kit.box(colors[i % colors.length], p[0], p[1] - 0.13, p[2], 0.11, 0.14, 0.11);
+    kit.litBox(colors[i % colors.length], p[0], p[1] - 0.13, p[2], 0.11, 0.14, 0.11);
   }
 }
 
@@ -146,7 +146,8 @@ export function wallLamp(F: Face, lat: number, y: number, glow = 0xf3d27a) {
   put(0x2f2d2a, lat, y + 0.25, 0.05, 0.16, 0.22, 0.08);
   put(0x2f2d2a, lat, y + 0.3, 0.2, 0.05, 0.05, 0.3);
   put(0x2f2d2a, lat, y + 0.17, 0.34, 0.3, 0.06, 0.3);
-  put(glow, lat, y, 0.34, 0.2, 0.3, 0.2);
+  const [x, z] = F.at(lat, 0.34);
+  F.kit.litBox(glow, x, y, z, 0.2, 0.3, 0.2, 0, F.f);
   put(0x2f2d2a, lat, y - 0.17, 0.34, 0.24, 0.05, 0.24);
 }
 
@@ -310,4 +311,33 @@ export function hipRoof(kit: Kit, o: HipRoofOptions) {
     }
   }
   return { outer, inner };
+}
+
+const GLYPHS: Record<string, string[]> = {
+  A: [".1.", "1.1", "111", "1.1", "1.1"],
+  B: ["11.", "1.1", "11.", "1.1", "11."],
+  C: [".11", "1..", "1..", "1..", ".11"],
+  I: ["111", ".1.", ".1.", ".1.", "111"],
+  L: ["1..", "1..", "1..", "1..", "111"],
+  M: ["1...1", "11.11", "1.1.1", "1...1", "1...1"],
+  N: ["1..1", "11.1", "1.11", "1..1", "1..1"],
+  P: ["11.", "1.1", "11.", "1..", "1.."],
+  U: ["1.1", "1.1", "1.1", "1.1", "111"],
+};
+
+/** Blocky lettering centred on (lat, y) of a wall face. */
+export function pixelText(F: Face, text: string, lat: number, y: number, out: number, px: number, color: number) {
+  const glyphs = [...text].map((ch) => GLYPHS[ch] ?? ["", "", "", "", ""]);
+  const width = glyphs.reduce((sum, g) => sum + (g[0]?.length ?? 1) + 1, -1);
+  let col = 0;
+  for (const g of glyphs) {
+    const w = g[0]?.length ?? 1;
+    g.forEach((row, r) => {
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] !== "1") continue;
+        F.put(color, lat + (col + c - (width - 1) / 2) * px, y + (2 - r) * px, out, px * 1.02, px * 1.02, 0.02);
+      }
+    });
+    col += w + 1;
+  }
 }
