@@ -1,5 +1,5 @@
-import { Kit } from "./kit";
-import { acUnit, antenna, downspout, Face, laundry, makeFace, railing, shutters, waterTank } from "./blocks-common";
+import type { Kit } from "./kit";
+import { acUnit, antenna, downspout, type Face, laundry, makeFace, railing, shutters, waterTank } from "./blocks-common";
 
 // Body spans x [-7, 7], z [-5, 4.2]; footprint x [-8, 8], z [-6, 6].
 const HW = 7;
@@ -7,8 +7,8 @@ const FRONT = 4.2;
 const BACK = -5;
 const CZ = (FRONT + BACK) / 2;
 const HD = (FRONT - BACK) / 2;
-const LEVELS = [0.6, 3.8, 7.0, 10.2];
-const TOP = 13.4;
+const LEVELS = [0.6, 3.8, 7.0];
+const TOP = 10.2;
 
 const BRICK = 0xa6573b;
 const STUCCO = 0xe9c98d;
@@ -148,7 +148,7 @@ function frontFacade(f: Face) {
   }
   // AC units hung under a couple of windows.
   acUnit(f, 6.15, 7.0 + 0.45, 0.05);
-  acUnit(f, -2.4, 10.2 + 0.45, 0.05);
+  acUnit(f, -2.4, 3.8 + 0.45, 0.05);
   acUnit(f, 2.4, 3.8 + 0.45, 0.05);
 
   // Ground floor windows with iron grilles and stone lintels.
@@ -165,7 +165,7 @@ function frontFacade(f: Face) {
     }
   }
   // Weather streaks below a few sills.
-  for (const [u, L] of [[-6.3, 3.8], [2.4, 7.0], [6.3, 10.2], [-2.4, 7.0]] as const) {
+  for (const [u, L] of [[-6.3, 3.8], [2.4, 7.0], [6.3, 3.8], [-2.4, 7.0]] as const) {
     f.fb(0xd4b07a, u + 0.3, L + 0.25, 0.01, 0.12, 0.5, 0.02);
     f.fb(0xd4b07a, u - 0.25, L + 0.15, 0.01, 0.08, 0.7, 0.02);
   }
@@ -200,9 +200,9 @@ function sideFacade(f: Face, isRight: boolean) {
     f.fb(0x85867c, -2.0, 1.6, 0.12, 0.7, 0.9, 0.22);
     f.fb(0x5b5e5a, -2.0, 1.6, 0.24, 0.5, 0.6, 0.03);
     f.fb(0xd8d2c2, -2.0, 1.75, 0.26, 0.2, 0.2, 0.02);
-    f.fb(0x2a2a28, -2.0, 7.5, 0.08, 0.05, 11.5, 0.05);
-    f.fb(0x2a2a28, -2.4, 12.6, 0.08, 0.8, 0.05, 0.05);
-    for (let y = 2.4; y < 13; y += 2.4) f.fb(0x6a6458, -2.0, y, 0.06, 0.12, 0.1, 0.12);
+    f.fb(0x2a2a28, -2.0, 5.9, 0.08, 0.05, 8.3, 0.05);
+    f.fb(0x2a2a28, -2.4, 9.4, 0.08, 0.8, 0.05, 0.05);
+    for (let y = 2.4; y < 9.8; y += 2.4) f.fb(0x6a6458, -2.0, y, 0.06, 0.12, 0.1, 0.12);
   } else {
     // Painted-over patch and a faded advertisement panel on the blind side.
     f.fb(0xe2d3a9, -2.0, 9.0, 0.02, 2.2, 1.3, 0.02);

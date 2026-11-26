@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { buildingTexture } from "../building-textures";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 import { cylinder, downspout, shrub } from "./mid-housing-parts";
 
 export function buildCondominium(kit: Kit) {
@@ -11,15 +11,17 @@ export function buildCondominium(kit: Kit) {
   const iron = 0x3c4446;
   const slab = 0xe3ddce;
   const acC = 0xd8d8d0;
-  const x0 = -5.0;
-  const x1 = 5.0;
+  const x0 = -7.4;
+  const x1 = 7.4;
+  // Four flats per floor in a long block, two each side of the central stair core.
+  const UNITS = [-5.95, -2.85, 2.85, 5.95];
   const zb = -4.4;
   const zf = 3.0;
   const cz = (zb + zf) / 2;
   const bw = x1 - x0;
   const bd = zf - zb;
-  const FL = [0.4, 3.6, 6.8, 10.0];
-  const roofY = 13.2;
+  const FL = [0.4, 3.6, 6.8];
+  const roofY = 10.0;
   const pastel = [
     [0xe8b4b0, 0xb6d8c0],
     [0xe9c98d, 0xa8c4dc],
@@ -29,26 +31,26 @@ export function buildCondominium(kit: Kit) {
   const stripes = [[0xd8584a, 0xf2ede0], [0x3f7fb0, 0xf2ede0], [0x4f9a6a, 0xf2ede0], [0xe0a030, 0xf2ede0]];
 
   // Ground pad, paving and plinth
-  box(0xc9c2b0, 0, 0.03, 0, 11.9, 0.06, 11.9);
-  for (let x = -5.5; x <= 5.5; x += 1.0) box(0xb5ad98, x, 0.065, 4.8, 0.03, 0.01, 2.3);
-  for (let z = 3.8; z <= 5.9; z += 1.0) box(0xb5ad98, 0, 0.065, z, 11.8, 0.01, 0.03);
+  box(0xc9c2b0, 0, 0.03, 0, 15.9, 0.06, 11.9);
+  for (let x = -7.5; x <= 7.5; x += 1.0) box(0xb5ad98, x, 0.065, 4.8, 0.03, 0.01, 2.3);
+  for (let z = 3.8; z <= 5.9; z += 1.0) box(0xb5ad98, 0, 0.065, z, 15.8, 0.01, 0.03);
   box(base, 0, 0.2, cz, bw + 0.4, 0.4, bd + 0.4);
   box(0x7d7a72, 0, 0.42, cz, bw + 0.44, 0.05, bd + 0.44);
 
   // Main block
   box(wallC, 0, (0.4 + roofY) / 2, cz, bw, roofY - 0.4, bd);
   // Pastel unit bays (front wraps around the corners to the sides)
-  for (let f = 0; f < 4; f++) {
+  for (let f = 0; f < FL.length; f++) {
     const y = FL[f] + 1.6;
-    for (const s of [-1, 1]) {
-      const c = pastel[f][s < 0 ? 0 : 1];
-      box(c, s * 3.05, y, zf + 0.015, 3.9, 3.0, 0.03);
-      box(c, s * (x1 + 0.015), y, cz, 0.03, 3.0, bd - 0.5);
-      box(c, s * 3.05, y, zb - 0.015, 3.9, 3.0, 0.03);
+    for (const [ui, cx] of UNITS.entries()) {
+      const c = pastel[f][ui % 2];
+      box(c, cx, y, zf + 0.015, 2.9, 3.0, 0.03);
+      box(c, cx, y, zb - 0.015, 2.9, 3.0, 0.03);
     }
+    for (const s of [-1, 1]) box(pastel[f][s < 0 ? 0 : 1], s * (x1 + 0.015), y, cz, 0.03, 3.0, bd - 0.5);
   }
   // Cornices, bands, pilasters
-  for (let f = 1; f < 4; f++) {
+  for (let f = 1; f < FL.length; f++) {
     const y = FL[f];
     box(trim, 0, y, zf + 0.07, bw + 0.2, 0.22, 0.14);
     box(trim, 0, y, zb - 0.07, bw + 0.2, 0.22, 0.14);
@@ -78,10 +80,10 @@ export function buildCondominium(kit: Kit) {
     for (let y = 1.0; y < roofY; y += 0.8) box(0xd6cfbb, px, y, pz, 0.48, 0.05, 0.48);
   }
   // Weathering stains
-  for (const [px, py, w, h] of [[-3.9, 0.8, 1.2, 0.6], [2.2, 0.75, 1.6, 0.5], [4.6, 6.0, 0.3, 2.2], [-4.6, 9.4, 0.25, 1.8], [0.9, 12.6, 1.4, 0.3]]) {
+  for (const [px, py, w, h] of [[-3.9, 0.8, 1.2, 0.6], [2.2, 0.75, 1.6, 0.5], [4.6, 6.0, 0.3, 2.2], [-4.6, 6.6, 0.25, 1.8], [0.9, 9.4, 1.4, 0.3]]) {
     box(0xb9b3a0, px, py, zf + 0.035, w, h, 0.02);
   }
-  for (const [pz, py, h] of [[1.5, 0.75, 0.55], [-2.0, 0.8, 0.6], [-3.9, 7.0, 2.5], [0.4, 12.5, 0.6]]) box(0xb9b3a0, x1 + 0.035, py, pz, 0.02, h, 0.9);
+  for (const [pz, py, h] of [[1.5, 0.75, 0.55], [-2.0, 0.8, 0.6], [-3.9, 7.0, 2.5], [0.4, 9.3, 0.6]]) box(0xb9b3a0, x1 + 0.035, py, pz, 0.02, h, 0.9);
 
   // Front façade per unit
   const awning = (x: number, y: number, z: number, w: number, depth: number, pair: number[]) => {
@@ -107,10 +109,10 @@ export function buildCondominium(kit: Kit) {
   const roller = (x: number, y: number, z: number, w: number, facing: number) => {
     box(0xc9c2b0, x + Math.sin(facing) * 0.12, y, z + Math.cos(facing) * 0.12, w + 0.2, 0.22, 0.2, 0, facing);
   };
-  for (let f = 0; f < 4; f++) {
+  for (let f = 0; f < FL.length; f++) {
     const y = FL[f];
-    for (const s of [-1, 1]) {
-      const cx = s * 3.05;
+    for (const [ui, cx] of UNITS.entries()) {
+      const s = cx < 0 ? -1 : 1;
       const doorX = cx - s * 0.75;
       const winX = cx + s * 0.85;
       // balcony door + window
@@ -120,13 +122,13 @@ export function buildCondominium(kit: Kit) {
       window(winX, y + 1.75, zf + 0.05, 1.05, 1.2);
       roller(winX, y + 2.5, zf, 1.05, 0);
       acUnit(winX, y + 0.75, zf + 0.03, 0);
-      awning(winX, y + 2.72, zf + 0.05, 1.4, 0.8, stripes[(f + (s > 0 ? 1 : 0)) % 4]);
+      awning(winX, y + 2.72, zf + 0.05, 1.2, 0.8, stripes[(f + ui) % 4]);
       if (f === 0) {
         // Ground-floor patio with low wall and planters
-        box(0xc4bcaa, cx, 0.42, 3.75, 3.7, 0.04, 1.5);
-        box(trim, cx, 0.75, 4.45, 3.7, 0.7, 0.2);
-        box(trim, cx, 1.14, 4.45, 3.8, 0.08, 0.28);
-        box(trim, cx + s * 1.85, 0.75, 3.75, 0.2, 0.7, 1.5);
+        box(0xc4bcaa, cx, 0.42, 3.75, 2.8, 0.04, 1.5);
+        box(trim, cx, 0.75, 4.45, 2.8, 0.7, 0.2);
+        box(trim, cx, 1.14, 4.45, 2.9, 0.08, 0.28);
+        box(trim, cx + s * 1.4, 0.75, 3.75, 0.2, 0.7, 1.5);
         box(0xb06a42, cx - s * 0.5, 1.3, 4.45, 1.6, 0.25, 0.3);
         for (const dx of [-0.6, 0, 0.6]) shrub(kit, cx - s * 0.5 + dx, 1.38, 4.45, 0.3, 0x4f8a3c);
         box(0xd4485a, cx - s * 0.3, 1.72, 4.5, 0.12, 0.1, 0.12);
@@ -139,18 +141,18 @@ export function buildCondominium(kit: Kit) {
         }
       } else {
         // Balcony slab, railings and life
-        box(slab, cx, y - 0.04, 3.68, 3.6, 0.18, 1.36);
-        box(0xb9b3a0, cx, y - 0.16, 4.3, 3.5, 0.06, 0.08);
-        box(trim, cx, y + 0.08, 4.3, 3.6, 0.1, 0.1);
-        box(iron, cx, y + 1.0, 4.28, 3.6, 0.07, 0.1);
-        for (let bx = cx - 1.75; bx <= cx + 1.76; bx += 0.15) box(iron, bx, y + 0.55, 4.28, 0.035, 0.9, 0.035);
-        for (const ex of [cx - 1.78, cx + 1.78]) {
+        box(slab, cx, y - 0.04, 3.68, 2.8, 0.18, 1.36);
+        box(0xb9b3a0, cx, y - 0.16, 4.3, 2.7, 0.06, 0.08);
+        box(trim, cx, y + 0.08, 4.3, 2.8, 0.1, 0.1);
+        box(iron, cx, y + 1.0, 4.28, 2.8, 0.07, 0.1);
+        for (let bx = cx - 1.35; bx <= cx + 1.36; bx += 0.15) box(iron, bx, y + 0.55, 4.28, 0.035, 0.9, 0.035);
+        for (const ex of [cx - 1.38, cx + 1.38]) {
           box(iron, ex, y + 1.0, 3.65, 0.07, 0.07, 1.3);
           for (let bz = 3.1; bz < 4.25; bz += 0.15) box(iron, ex, y + 0.55, bz, 0.035, 0.9, 0.035);
         }
-        const variant = (f + (s > 0 ? 1 : 0)) % 3;
+        const variant = (f + ui) % 3;
         if (variant === 0) {
-          for (const dx of [-1.4, -1.0]) {
+          for (const dx of [-1.1, -0.75]) {
             box(0xb06a42, cx + s * dx, y + 0.2, 4.0, 0.3, 0.3, 0.3);
             shrub(kit, cx + s * dx, y + 0.3, 4.0, 0.32, 0x4f8a3c);
           }
@@ -165,22 +167,22 @@ export function buildCondominium(kit: Kit) {
         } else {
           box(0x9a8967, cx + s * 0.2, y + 0.4, 3.75, 0.7, 0.05, 0.5);
           for (const dz of [-0.2, 0.2]) box(0x9a8967, cx + s * 0.2, y + 0.2, 3.75 + dz, 0.6, 0.4, 0.04);
-          box(0xb06a42, cx - s * 1.4, y + 0.2, 4.0, 0.3, 0.3, 0.3);
-          box(0x5f8a43, cx - s * 1.4, y + 0.6, 4.0, 0.2, 0.6, 0.2);
-          box(0x4f7a34, cx - s * 1.4, y + 0.95, 4.0, 0.5, 0.1, 0.5, 0, 0.5);
+          box(0xb06a42, cx - s * 1.1, y + 0.2, 4.0, 0.3, 0.3, 0.3);
+          box(0x5f8a43, cx - s * 1.1, y + 0.6, 4.0, 0.2, 0.6, 0.2);
+          box(0x4f7a34, cx - s * 1.1, y + 0.95, 4.0, 0.5, 0.1, 0.5, 0, 0.5);
         }
       }
     }
   }
   // Top-floor balcony awnings
-  for (const s of [-1, 1]) {
+  for (const [ui, cx] of UNITS.entries()) {
     const a = 0.32;
     const depth = 1.45;
-    const pair = stripes[s < 0 ? 0 : 2];
-    for (let i = 0; i < 16; i++) {
-      const sx = s * 3.05 - 1.76 + 0.22 * (i + 0.5);
-      box(pair[i % 2], sx, 12.85 - Math.sin(a) * depth / 2, zf + Math.cos(a) * depth / 2, 0.22, 0.04, depth, a);
-      box(pair[i % 2], sx, 12.85 - Math.sin(a) * depth - 0.12, zf + Math.cos(a) * depth, 0.22, 0.25, 0.03);
+    const pair = stripes[ui % 2 ? 2 : 0];
+    for (let i = 0; i < 12; i++) {
+      const sx = cx - 1.32 + 0.22 * (i + 0.5);
+      box(pair[i % 2], sx, roofY - 0.35 - Math.sin(a) * depth / 2, zf + Math.cos(a) * depth / 2, 0.22, 0.04, depth, a);
+      box(pair[i % 2], sx, roofY - 0.35 - Math.sin(a) * depth - 0.12, zf + Math.cos(a) * depth, 0.22, 0.25, 0.03);
     }
   }
 
@@ -188,7 +190,7 @@ export function buildCondominium(kit: Kit) {
   const coreZ = zf + 0.25;
   box(0xece3cd, 0, (0.4 + roofY + 0.85) / 2, coreZ, 2.2, roofY + 0.85 - 0.4, 0.5);
   for (const s of [-1, 1]) box(trim, s * 1.1, (0.4 + roofY + 0.9) / 2, zf + 0.5, 0.25, roofY + 0.9 - 0.4, 0.2);
-  for (let f = 1; f < 4; f++) {
+  for (let f = 1; f < FL.length; f++) {
     const y = FL[f] + 1.6;
     box(trim, 0, y, zf + 0.52, 1.0, 2.3, 0.04);
     box(0x9fc4c8, 0, y, zf + 0.55, 0.8, 2.1, 0.04);
@@ -221,7 +223,7 @@ export function buildCondominium(kit: Kit) {
   for (const s of [-1, 1]) {
     const wx = s * (x1 + 0.05);
     const facing = s * Math.PI / 2;
-    for (let f = 0; f < 4; f++) {
+    for (let f = 0; f < FL.length; f++) {
       const y = FL[f];
       for (const wz of [1.8, -3.2]) {
         window(wx, y + 1.75, wz, 1.0, 1.2, facing);
@@ -257,21 +259,22 @@ export function buildCondominium(kit: Kit) {
   box(0x737b77, x1 + 0.4, 2.9, -0.7, 0.8, 0.08, 1.4);
 
   // Back façade
-  for (let f = 0; f < 4; f++) {
+  for (let f = 0; f < FL.length; f++) {
     const y = FL[f];
-    for (const bx of [-4.0, -2.2, 2.2, 4.0]) {
+    for (const bx of [-6.4, -4.6, -2.8, 2.8, 4.6, 6.4]) {
       window(bx, y + 1.75, zb - 0.05, 0.95, 1.2, Math.PI);
       box(0xc9c2b0, bx, y + 2.5, zb - 0.12, 1.15, 0.22, 0.2);
     }
     for (const bx of [-0.6, 0.6]) window(bx, y + 2.1, zb - 0.05, 0.5, 0.6, Math.PI);
     if (f > 0) {
-      acUnit(-3.1, y + 0.75, zb - 0.03, Math.PI);
+      acUnit(-3.7, y + 0.75, zb - 0.03, Math.PI);
+      acUnit(5.5, y + 0.75, zb - 0.03, Math.PI);
       for (const s of [-1, 1]) {
-        box(iron, s * 3.1, y + 2.2, zb - 0.6, 0.04, 0.04, 1.1);
-        box(iron, s * 3.1 + 0.6, y + 2.2, zb - 0.6, 0.04, 0.04, 1.1);
+        box(iron, s * 3.7, y + 2.2, zb - 0.6, 0.04, 0.04, 1.1);
+        box(iron, s * 3.7 + 0.6, y + 2.2, zb - 0.6, 0.04, 0.04, 1.1);
         const cl = [0xf2ede0, 0xe8b4b0, 0x3f7fb0, 0xe7bd70];
-        box(cl[f % 4], s * 3.1, y + 1.95, zb - 0.8, 0.02, 0.45, 0.35);
-        box(cl[(f + 1) % 4], s * 3.1 + 0.6, y + 1.9, zb - 0.6, 0.02, 0.55, 0.3);
+        box(cl[f % 4], s * 3.7, y + 1.95, zb - 0.8, 0.02, 0.45, 0.35);
+        box(cl[(f + 1) % 4], s * 3.7 + 0.6, y + 1.9, zb - 0.6, 0.02, 0.55, 0.3);
       }
     }
   }
@@ -296,7 +299,7 @@ export function buildCondominium(kit: Kit) {
   window(1.12, roofY + 1.5, 2.85, 0.6, 0.6, Math.PI / 2);
   box(0x737b77, 0.5, roofY + sh + 0.45, 2.8, 0.4, 0.6, 0.4);
   box(0x5d6461, 0.5, roofY + sh + 0.78, 2.8, 0.55, 0.06, 0.55);
-  for (const tx of [-3.2, 3.2]) {
+  for (const tx of [-4.6, 4.6]) {
     const tz = -2.5;
     for (const lx of [-0.55, 0.55]) for (const lz of [-0.55, 0.55]) box(0x5d6461, tx + lx, roofY + 0.65, tz + lz, 0.1, 1.3, 0.1);
     box(0x5d6461, tx, roofY + 1.3, tz, 1.3, 0.1, 1.3);
@@ -332,14 +335,14 @@ export function buildCondominium(kit: Kit) {
   box(0x5d6461, 2.0, roofY + 0.37, -0.8, 1.0, 0.05, 1.0);
 
   // Forecourt: planters, lamps, bench, bicycle, bins
-  for (const px of [-4.2, -2.2, 2.2, 4.2]) {
+  for (const px of [-6.2, -3.4, 3.4, 6.2]) {
     box(0xd6cfbb, px, 0.3, 5.45, 1.3, 0.55, 0.7);
     box(0x815b36, px, 0.58, 5.45, 1.15, 0.04, 0.55);
     shrub(kit, px - 0.25, 0.58, 5.45, 0.45);
     shrub(kit, px + 0.3, 0.58, 5.45, 0.38, 0x557a3a);
     box(0xd4485a, px + 0.1, 1.0, 5.55, 0.12, 0.1, 0.12);
   }
-  for (const lx of [-5.5, 5.5]) {
+  for (const lx of [-7.1, 7.1]) {
     box(iron, lx, 1.6, 5.5, 0.1, 3.2, 0.1);
     box(iron, lx, 3.22, 5.3, 0.06, 0.06, 0.5);
     box(0xf6e7a8, lx, 3.1, 5.1, 0.24, 0.2, 0.24);

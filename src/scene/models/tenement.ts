@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { Kit } from "./kit";
-import { acUnit, antenna, Face, laundry, makeFace, railing, shutters, waterTank } from "./blocks-common";
+import type { Kit } from "./kit";
+import { acUnit, antenna, type Face, laundry, makeFace, railing, shutters, waterTank } from "./blocks-common";
 
 // Main block x [-7.6, 5.2], z [-5.0, 3.4]; access galleries to z 5.2; open stair x [5.3, 7.8].
 const X0 = -7.6;
@@ -12,8 +12,9 @@ const CZ = (Z0 + Z1) / 2;
 const W = X1 - X0;
 const D = Z1 - Z0;
 const GAL = 1.8;
-const LV = [0.35, 3.35, 6.35, 9.35];
-const TOP = 12.35;
+const LV = [0.35, 3.35, 6.35];
+const TOP = 9.35;
+const LAST = LV[LV.length - 1];
 
 const WALL = 0x92908a;
 const SLAB = 0x8a877e;
@@ -99,8 +100,8 @@ function shell(kit: Kit) {
     box(SLAB, x, (0.24 + TOP) / 2, Z1 + GAL - 0.15, 0.3, TOP - 0.24, 0.3);
     box(STAIN, x, 0.6, Z1 + GAL - 0.15, 0.34, 0.7, 0.34);
   }
-  for (const x of [5.45, 7.65]) box(SLAB, x, (LV[3] + 1.5) / 2 + 0.1, -2.45, 0.24, LV[3] + 1.5, 0.24);
-  box(SLAB, 7.65, (LV[3] + 1.5) / 2 + 0.1, -0.95, 0.2, LV[3] + 1.5, 0.2);
+  for (const x of [5.45, 7.65]) box(SLAB, x, (LAST + 1.5) / 2 + 0.1, -2.45, 0.24, LAST + 1.5, 0.24);
+  box(SLAB, 7.65, (LAST + 1.5) / 2 + 0.1, -0.95, 0.2, LAST + 1.5, 0.2);
 }
 
 function frontUnits(f: Face, rnd: Rnd, pick: Pick) {
@@ -278,8 +279,7 @@ function stairs(kit: Kit) {
     }
     return rx;
   };
-  for (let i = 0; i < 4; i++) {
-    const L = LV[i];
+  for (const L of LV) {
     flight(7.2, Z1, L, -1);
     const rx = flight(5.85, -1.0, L + rise, 1);
     // Mid landing with railings.
@@ -304,9 +304,9 @@ function stairs(kit: Kit) {
   }
   // Roof-level stair hood made of salvaged sheet metal.
   for (const [x, z] of [[5.45, -2.45], [7.65, -2.45], [7.65, -0.95]] as const) box(RUST_DARK, x, TOP - 0.3, z, 0.1, 0.6, 0.1);
-  box(0x858079, 6.6, LV[3] + 1.5 + 2.75, -1.4, 2.6, 0.08, 2.6, -0.12);
-  for (let x = 5.4; x <= 7.8; x += 0.3) box(0x9a735e, x, LV[3] + 1.5 + 2.82, -1.4, 0.05, 0.04, 2.6, -0.12);
-  for (const [x, z] of [[5.45, -2.6], [7.7, -2.6], [7.7, -0.2]] as const) box(IRON, x, LV[3] + 1.5 + 1.35, z, 0.08, 2.7, 0.08);
+  box(0x858079, 6.6, LAST + 1.5 + 2.75, -1.4, 2.6, 0.08, 2.6, -0.12);
+  for (let x = 5.4; x <= 7.8; x += 0.3) box(0x9a735e, x, LAST + 1.5 + 2.82, -1.4, 0.05, 0.04, 2.6, -0.12);
+  for (const [x, z] of [[5.45, -2.6], [7.7, -2.6], [7.7, -0.2]] as const) box(IRON, x, LAST + 1.5 + 1.35, z, 0.08, 2.7, 0.08);
 }
 
 function windowRow(f: Face, us: number[], rnd: Rnd, pick: Pick, w = 1.0, flat = false) {
@@ -369,7 +369,7 @@ function backFacade(f: Face, rnd: Rnd, pick: Pick) {
   }
   f.fb(0x6f736c, 1.6, 0.4, 0.4, 0.2, 0.2, 0.5);
   // Plaster patches and exposed brick.
-  plasterDamage(f, [[-4.0, 6.0, 1.4, 0.7], [4.0, 9.0, 1.0, 0.6], [-2.6, 11.9, 1.6, 0.5], [4.0, 0.9, 0.8, 0.4]]);
+  plasterDamage(f, [[-4.0, 6.0, 1.4, 0.7], [4.0, 7.4, 1.0, 0.6], [-2.6, 8.9, 1.6, 0.5], [4.0, 0.9, 0.8, 0.4]]);
   // Poles with laundry jutting from windows.
   for (const [u, y, s] of [[-4.0, 8.6, 41], [4.0, 5.6, 43]] as const) {
     for (const du of [-0.7, 0.7]) f.fb(0x7a7d77, u + du, y, 0.45, 0.05, 0.05, 0.9);
@@ -398,8 +398,8 @@ function crack(f: Face, u: number, y: number, len: number) {
 
 function leftFacade(f: Face, rnd: Rnd, pick: Pick) {
   windowRow(f, [-3.0, 3.0], rnd, pick, 0.95, true);
-  plasterDamage(f, [[-0.6, 3.9, 1.0, 0.8], [0.6, 10.6, 1.4, 0.7], [-3.0, 6.4, 0.9, 0.6]]);
-  crack(f, 0.0, 12.0, 9);
+  plasterDamage(f, [[-0.6, 3.9, 1.0, 0.8], [0.6, 7.6, 1.4, 0.7], [-3.0, 6.4, 0.9, 0.6]]);
+  crack(f, 0.0, 9.0, 7);
   crack(f, -0.6, 5.6, 6);
   // Faded political mural on the blank strip.
   f.fb(0xb5513f, 0, 7.6, 0.03, 2.1, 1.3, 0.02);
@@ -424,8 +424,8 @@ function rightFacade(f: Face, rnd: Rnd, pick: Pick) {
     f.fb(0x1e1e1c, 0.5, L + 2.3, 0.05, 0.03, 0.03, 3.0);
   }
   plasterDamage(f, [[1.4, 7.6, 1.0, 1.2], [-3.0, 4.2, 1.2, 0.7]]);
-  crack(f, 1.4, 11.9, 7);
-  f.fb(0xe2d3a9, -2.4, 9.2, 0.02, 2.4, 2.0, 0.02);
+  crack(f, 1.4, 8.9, 6);
+  f.fb(0xe2d3a9, -2.4, 6.6, 0.02, 2.4, 2.0, 0.02);
 }
 
 function roof(kit: Kit, rnd: Rnd, pick: Pick) {

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 /** A building face: origin (cx, cz) on the wall plane, outward normal = (sin yaw, cos yaw). */
 export interface Face {

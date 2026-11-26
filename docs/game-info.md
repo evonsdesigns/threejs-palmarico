@@ -41,7 +41,7 @@ Dimensions are in tiles (W×L) along the orthogonal grid axes. Buildings marked
 | Bunkhouse | 2×3 | Holds 2 families. |
 | House | 2×3 | Standard single-family home. |
 | Luxury House | 3×3 | High-quality single-family home. |
-| Condominium (PI) | 3×3 | Multi-family middle-to-upper-class housing. |
+| Condominium (PI) | 3×4 | Multi-family middle-to-upper-class housing. Long rectangular block like the original game (widened from 3×3 to match its in-game look). |
 | Tenement | 3×4 | High-density, low-quality multi-family housing. |
 | Apartment | 3×4 | High-density, medium-quality multi-family housing. |
 

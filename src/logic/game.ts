@@ -64,7 +64,7 @@ export const buildings: BuildingDefinition[] = [
   { id: "house", name: "House", icon: "⌂", cost: 400, upkeep: 10, jobs: 0, housing: 8, food: 0, revenue: 0, tiles: [2, 3], description: "Homes for 8 residents." },
   { id: "apartment", name: "Apartment", icon: "▦", cost: 1200, upkeep: 40, jobs: 0, housing: 24, food: 0, revenue: 0, tiles: [4, 3], description: "Homes for 24 residents." },
   { id: "tenement", name: "Tenement", icon: "▦", cost: 800, upkeep: 30, jobs: 0, housing: 32, food: 0, revenue: 0, tiles: [4, 3], description: "Inexpensive homes for 32 residents." },
-  { id: "condominium", name: "Condominium", icon: "⌂", cost: 1600, upkeep: 55, jobs: 0, housing: 16, food: 0, revenue: 0, tiles: [3, 3], description: "Homes for 16 residents." },
+  { id: "condominium", name: "Condominium", icon: "⌂", cost: 1600, upkeep: 55, jobs: 0, housing: 16, food: 0, revenue: 0, tiles: [4, 3], description: "Homes for 16 residents." },
   { id: "luxury-house", name: "Luxury House", icon: "⌂", cost: 1000, upkeep: 35, jobs: 0, housing: 4, food: 0, revenue: 0, tiles: [3, 3], description: "Homes for 4 residents." },
   { id: "bunkhouse", name: "Bunkhouse", icon: "⌂", cost: 300, upkeep: 12, jobs: 0, housing: 12, food: 0, revenue: 0, tiles: [3, 2], description: "Homes for 12 residents." },
   { id: "country-house", name: "Country House", icon: "⌂", cost: 250, upkeep: 8, jobs: 0, housing: 4, food: 0, revenue: 0, tiles: [2, 2], description: "Homes for 4 residents." },
