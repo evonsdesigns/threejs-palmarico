@@ -65,7 +65,7 @@ export function buildingTexture(surface: Surface): THREE.CanvasTexture {
 }
 
 export function buildingSurface(color: number): Surface | null {
-  if ([0xece7da, 0xe3ddce, 0xe2d3a9, 0xded8c0, 0xa8b5b8, 0xece3cd, 0xe9c98d, 0xe7bd70].includes(color)) return "plaster";
+  if ([0xece7da, 0xe3ddce, 0xe2d3a9, 0xded8c0, 0xa8b5b8, 0xece3cd, 0xe9c98d, 0xe7bd70, 0x92908a, 0x343b3c].includes(color)) return "plaster";
   if ([0x537a9a, 0xb9b8a2, 0x65a39b, 0x668374, 0x9a8967, 0xb28b60, 0x755b43, 0x7d6b55].includes(color)) return "wood";
   if ([0x737b77, 0x687a80, 0x85867c, 0x6b6b58, 0x858079].includes(color)) return "metal";
   if ([0xb06a42, 0x755746, 0xa34e35, 0xa6573b, 0xb35e3f].includes(color)) return "tile";

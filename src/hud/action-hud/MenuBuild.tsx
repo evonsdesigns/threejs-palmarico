@@ -1,13 +1,14 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import MenuBuildSubMenu, { BuildMenuSubMenuId } from "./MenuBuildSubMenu";
-import MenuGeneric from "./MenuGeneric";
+import BuildTiles from "./BuildTiles";
 import * as buttonData from "./button-data";
-import { buildings, game, BuildingType } from "../../logic/game";
+import { BuildingType } from "../../logic/game";
 
 const availableBuildings: Record<string, BuildingType> = {
   house: "house",
   apartment: "apartment",
+  tenement: "tenement",
   condominium: "condominium",
   "luxury-house": "luxury-house",
   bunkhouse: "bunkhouse",
@@ -17,6 +18,9 @@ const availableBuildings: Record<string, BuildingType> = {
   farm: "farm",
   marketplace: "market",
   clinic: "clinic",
+  pub: "pub",
+  restaurant: "restaurant",
+  "teamsters-office": "teamsters-office",
 };
 
 const MenuBuild: React.FC = () => {
@@ -54,6 +58,7 @@ const MenuBuild: React.FC = () => {
       buttons = buttonData.landscapeButtonData;
       break;
   }
+  const visibleButtons = React.useMemo(() => buttons?.filter((button) => button.id !== "shack"), [buttons]);
 
   return (
     <Box sx={{ p: 0, display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
@@ -61,21 +66,8 @@ const MenuBuild: React.FC = () => {
         subMenu={subMenu}
         setSubMenu={setSubMenu}
       />
-      {buttons ?
-        <MenuGeneric
-          buttons={buttons.filter((button) => button.id !== "shack").map((button) => {
-            const definition = buildings.find((item) => item.id === availableBuildings[button.id]);
-            return {
-              ...button,
-              available: !!definition,
-              description: definition ? `${definition.description} Cost: $${definition.cost}; upkeep: $${definition.upkeep}/month.` : "Not available yet.",
-            };
-          })}
-          onButtonClick={(buttonId) =>  {
-            const type = availableBuildings[buttonId];
-            if (type) game.select(game.getSnapshot().selected === type ? null : type);
-          }}
-        /> :
+      {visibleButtons ?
+        <BuildTiles buttons={visibleButtons} availableBuildings={availableBuildings} /> :
         <Box sx={{ p: 2 }}>Select a submenu</Box>
       }
     </Box>

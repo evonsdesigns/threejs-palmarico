@@ -65,7 +65,7 @@
   letter-spacing: .16em;
 }
 
-.island-stats__approval {
+.island-stats__speed {
   position: absolute;
   bottom: 1px;
   right: 0;
@@ -79,14 +79,31 @@
   border: 1px solid #c0ae84;
 }
 
-.island-stats__approval span {
+.island-stats__speed button {
   flex: 1;
   min-width: 0;
-  background: #394b35;
-  border: 1px solid #243b20;
+  height: 100%;
+  display: flex;
+  align-items: end;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
-.island-stats__approval span.is-active {
+.island-stats__speed button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 1px;
+}
+
+.island-stats__speed span {
+  width: 100%;
+  background: #394b35;
+  border: 1px solid #243b20;
+  box-sizing: border-box;
+}
+
+.island-stats__speed span.is-active {
   background: linear-gradient(90deg, #288d31, #73c64a);
 }
 
@@ -143,13 +160,39 @@
   outline-offset: 2px;
 }
 
+.music-player {
+  position: absolute;
+  right: -3px;
+  bottom: calc(100% + 6px);
+  width: min(250px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 10px;
+  color: #eee3c5;
+  background: linear-gradient(135deg, #71624c, #3e352b);
+  border: 3px ridge #a89978;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .45);
+  font: 12px Arial, sans-serif;
+}
+
+.music-player[hidden] { display: none; }
+.music-player__heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.music-player__heading strong { font: bold 15px Georgia, serif; }
+.music-player label { display: flex; justify-content: space-between; margin: 8px 0 4px; color: #d7c7a6; }
+.music-player select, .music-player input { width: 100%; }
+.music-player select { box-sizing: border-box; padding: 4px; color: #f0dfb6; background: #342c28; border: 1px solid #ad9c78; }
+.music-player input { margin: 0; accent-color: #c9b272; }
+.music-player__controls { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+.music-player__controls button { min-width: 46px; }
+.music-player p { margin: 8px 0 0; line-height: 1.4; }
+.music-player__error { color: #ffd1b9; }
+
 @media (min-width: 1200px) {
   .island-stats { width: 220px; padding: 8px; }
   .island-stats__crest-area { height: 160px; }
   .island-stats__crest { width: 158px; height: 158px; border-width: 6px; }
   .island-stats__crest-name { font-size: 19px; }
   .island-stats__crest-subtitle { font-size: 9px; }
-  .island-stats__approval { width: 39px; height: 47px; }
+  .island-stats__speed { width: 39px; height: 47px; }
   .island-stats__readout span { font-size: 9px; }
   .island-stats__readout strong { font-size: 14px; }
   .island-stats__footer { font-size: 11px; }

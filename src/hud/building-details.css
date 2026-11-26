@@ -1,0 +1,26 @@
+.building-details {
+  position: absolute;
+  right: 166px;
+  bottom: 230px;
+  width: min(230px, calc(100vw - 182px));
+  box-sizing: border-box;
+  padding: 10px;
+  color: #eee3c5;
+  background: linear-gradient(135deg, #71624c, #3e352b);
+  border: 3px ridge #a89978;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .45);
+  font: 12px/1.35 Arial, sans-serif;
+  pointer-events: auto;
+}
+
+.building-details header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.building-details strong { font: bold 15px Georgia, serif; }
+.building-details button { border: 2px ridge #ad9c78; background: #4a4035; color: #f0dfb6; cursor: pointer; }
+.building-details p { margin: 7px 0; }
+.building-details label { display: grid; gap: 4px; margin-top: 8px; }
+.building-details select { width: 100%; padding: 4px; color: #f0dfb6; background: #342c28; border: 1px solid #ad9c78; }
+.building-details button:focus-visible, .building-details select:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+
+@media (min-width: 1200px) {
+  .building-details { right: 248px; }
+}

@@ -1,5 +1,6 @@
 import React, { useSyncExternalStore } from "react";
-import { game } from "../../logic/game";
+import { game, gameSpeeds } from "../../logic/game";
+import MusicPlayer from "./MusicPlayer";
 import "./stats-panel.css";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -23,9 +24,11 @@ const StatsPanel: React.FC = () => {
           <span className="island-stats__crest-name">PALMARICO</span>
           <span className="island-stats__crest-subtitle">REPUBLICA</span>
         </div>
-        <div className="island-stats__approval" role="meter" aria-label="Approval" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.approval} title={`Approval: ${state.approval}%`}>
-          {[1, 2, 3, 4, 5].map((step) => (
-            <span key={step} className={state.approval >= step * 20 ? "is-active" : ""} style={{ height: `${step * 20}%` }} />
+        <div className="island-stats__speed" role="group" aria-label="Game speed" title={`Game speed: ${state.speed}×`}>
+          {gameSpeeds.map((speed) => (
+            <button type="button" key={speed} aria-label={`Set game speed to ${speed}x`} aria-pressed={state.speed === speed} onClick={() => game.setSpeed(speed)}>
+              <span className={state.speed >= speed ? "is-active" : ""} style={{ height: `${speed * 20}%` }} />
+            </button>
           ))}
         </div>
       </div>
@@ -40,6 +43,7 @@ const StatsPanel: React.FC = () => {
       <div className="island-stats__footer">
         <span title="Food supply / population">Food {state.food}/{state.population}</span>
         <span title="Approval">★ {state.approval}%</span>
+        <MusicPlayer />
         <button type="button" onClick={() => game.togglePause()} aria-label={state.paused ? "Resume simulation" : "Pause simulation"}>
           {state.paused ? "▶" : "❚❚"}
         </button>
