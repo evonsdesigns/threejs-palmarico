@@ -106,6 +106,15 @@ export class Residents {
       && footprintIntersectsCircle(footprint, person.model.position.x, person.model.position.z, 0.86));
   }
 
+  /** How many residents are currently inside each building, keyed by building index. */
+  insideCounts() {
+    const counts = new Map<number, number>();
+    for (const person of this.people) {
+      if (person.inside !== null) counts.set(person.inside, (counts.get(person.inside) ?? 0) + 1);
+    }
+    return counts;
+  }
+
   update(delta: number, state: GameSnapshot) {
     this.people.forEach((person) => {
       const { home, work, service } = person.plan;

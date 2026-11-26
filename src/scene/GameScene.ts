@@ -12,6 +12,7 @@ import { SkySunController } from "./SkySunController";
 import { createMapControls } from "./controls";
 import { createBuilding } from "./buildings";
 import { Residents } from "./residents";
+import { InteriorOccupants } from "./interior-occupants";
 import { createPalmGrove } from "./palms";
 import { daylightAt } from "./daylight";
 import { BuildingLights } from "./building-lights";
@@ -25,6 +26,7 @@ class GameScene {
 
   private readonly scene = new THREE.Scene();
   private readonly buildingLights = new BuildingLights(this.scene);
+  private readonly interiors = new InteriorOccupants(this.scene);
   private readonly renderer = new THREE.WebGLRenderer({ antialias: true });
   private readonly camera = createCamera();
   private readonly controls: MapControls;
@@ -138,6 +140,7 @@ class GameScene {
     this.ambientLight.color.copy(this.nightAmbient).lerp(this.dayAmbient, daylight);
     this.ambientLight.groundColor.copy(this.nightGround).lerp(this.dayGround, daylight);
     this.buildingLights.update(daylight, this.controls.target);
+    this.interiors.update(delta, this.residents.insideCounts(), game.getSnapshot().placed, (index) => this.placedModels[index], daylight);
     if (this.water) this.water.setDaylight(daylight);
   }
 
