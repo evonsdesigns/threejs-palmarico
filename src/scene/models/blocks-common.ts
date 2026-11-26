@@ -34,6 +34,12 @@ export function shutters(f: Face, u: number, y: number, w: number, h: number, co
   const sw = w / 2 + 0.05;
   for (const side of [-1, 1]) {
     if ((side < 0 && skipLeft) || (side > 0 && skipRight)) continue;
+    if (open < 0) {
+      // Closed: each leaf covers half the window.
+      f.fb(color, u + side * w / 4, y, 0.16, w / 2, h + 0.05, 0.05);
+      for (let sy = -h / 2 + 0.15; sy < h / 2 - 0.05; sy += 0.18) f.fb(slat, u + side * w / 4, y + sy, 0.2, w / 2 - 0.08, 0.035, 0.03);
+      continue;
+    }
     const hingeU = u + side * (w / 2 + 0.15);
     const cu = hingeU + side * Math.cos(open) * sw / 2;
     const cn = 0.12 + Math.sin(open) * sw / 2;

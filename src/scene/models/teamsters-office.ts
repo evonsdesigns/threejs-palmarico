@@ -29,7 +29,7 @@ const SACK = 0xcdbb8f;
 const X0 = -2.4, X1 = 5.6, Z0 = -3.6, Z1 = 2.4;
 const CX = (X0 + X1) / 2, CZ = (Z0 + Z1) / 2, W = X1 - X0, D = Z1 - Z0;
 const BASE = 0.45, TOP = 3.6, PARAPET = 4.0;
-const AX0 = -5.8, AX1 = X0, AZ0 = -3.4, AZ1 = 2.0, AH = 2.6;
+const AX0 = -5.7, AX1 = X0, AZ0 = -3.4, AZ1 = 2.0, AH = 2.6;
 const ACX = (AX0 + AX1) / 2, ACZ = (AZ0 + AZ1) / 2, AW = AX1 - AX0, AD = AZ1 - AZ0;
 const MX = -1.9, MZ = 3.05;
 
@@ -99,10 +99,10 @@ export function buildTeamstersOffice(kit: Kit) {
   box(ROOF, CX, TOP + 0.06, CZ, W - 0.5, 0.12, D - 0.5);
   const roofTop = TOP + 0.12;
   for (let x = X0 + 1.1; x < X1 - 0.4; x += 0.95) box(0x4a5052, x, roofTop + 0.003, CZ, 0.05, 0.006, D - 0.55);
-  const patchColors = [0x2a2f30, 0x3f4647, 0x30363a, 0x474b48, 0x252a2b];
-  for (let i = 0; i < 46; i++) {
-    const w = 0.25 + rand() * 1.3;
-    const d = 0.25 + rand() * 1.1;
+  const patchColors = [0x2e3436, 0x3b4244, 0x30373a, 0x41474a, 0x2a2f31];
+  for (let i = 0; i < 70; i++) {
+    const w = 0.2 + rand() * 0.9;
+    const d = 0.2 + rand() * 0.8;
     const px = X0 + 0.3 + w / 2 + rand() * (W - 0.6 - w);
     const pz = Z0 + 0.3 + d / 2 + rand() * (D - 0.6 - d);
     box(patchColors[i % patchColors.length], px, roofTop + 0.004 + (i % 5) * 0.0015, pz, w, 0.004, d);
@@ -124,7 +124,7 @@ export function buildTeamstersOffice(kit: Kit) {
     box(0xd9d7cf, px, (roofTop + top) / 2, pz, 0.07, top - roofTop, 0.07);
     for (let y = top - 0.3; y > top - 2.2; y -= 0.6) box(0xd9d7cf, px, y, pz, 0.9 - (top - y) * 0.15, 0.035, 0.035);
     box(0xd9d7cf, px, top - 1.0, pz, 0.035, 0.035, 0.7);
-    for (const [gx, gz] of [[1.1, 0.9], [-1.1, 0.9], [0.9, -1.1], [-1, -1]]) {
+    for (const [gx, gz] of [[1.1, 0.7], [-1.0, 0.8], [0.1, -1.2]]) {
       beam(WIRE, px, roofTop + (top - roofTop) * 0.6, pz, px + gx, roofTop + 0.02, pz + gz, 0.018);
     }
   }
@@ -386,7 +386,6 @@ export function buildTeamstersOffice(kit: Kit) {
   const anchors: [number, number, number][] = [[-5.6, 0.1, 3.85], [1.9, 0.1, 3.9], [-0.6, roofTop + 0.05, -2.6], [-3.4, AH + 0.12, -1.8]];
   for (const [ax, ay, az] of anchors) {
     beam(WIRE, MX + Math.sign(ax - MX) * hw(8.8), 8.8, MZ + Math.sign(az - MZ) * hw(8.8), ax, ay, az, 0.02);
-    beam(WIRE, MX + Math.sign(ax - MX) * hw(5.4), 5.4, MZ + Math.sign(az - MZ) * hw(5.4), ax, ay, az, 0.02);
     box(CONCRETE, ax, ay, az, 0.2, 0.12, 0.2);
   }
   beam(WIRE, MX, mTop + 1.0, MZ, poles[0][0], poles[0][2] - 0.3, poles[0][1], 0.02);
