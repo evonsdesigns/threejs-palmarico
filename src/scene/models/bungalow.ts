@@ -1,5 +1,5 @@
-import { Kit } from "./kit";
-import { bush, palm, rng, shapes, Shapes, wall } from "./small-homes-parts";
+import type { Kit } from "./kit";
+import { bush, palm, rng, shapes, type Shapes, wall } from "./small-homes-parts";
 
 const LOG = 0x6e5a42;
 const TIMBER = 0x5a4330;

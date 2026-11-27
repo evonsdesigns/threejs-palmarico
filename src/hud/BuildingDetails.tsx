@@ -1,5 +1,6 @@
 import React, { useSyncExternalStore } from "react";
-import { buildings, buildingUpkeep, farmCropProduction, farmCrops, game, maxHaulingBonus, pubCapacity, pubCharge, pubDressCodes, restaurantCapacity, restaurantCharge, restaurantQuality, restaurantTableSettingDetails, restaurantTableSettings, teamsterWorkModeDetails, teamsterWorkModes } from "../logic/game";
+import { buildings, buildingProducedGood, buildingUpkeep, farmCropProduction, farmCrops, game, maxHaulingBonus, mineResourcePrices, mineResources, pubCapacity, pubCharge, pubDressCodes, restaurantCapacity, restaurantCharge, restaurantQuality, restaurantTableSettingDetails, restaurantTableSettings, teamsterWorkModeDetails, teamsterWorkModes, immigrationOptions } from "../logic/game";
+import { buildingEffects } from "../logic/building-effects";
 import "./building-details.css";
 
 const BuildingDetails: React.FC = () => {
@@ -8,6 +9,9 @@ const BuildingDetails: React.FC = () => {
   if (index === null) return null;
   const building = state.placed[index];
   const definition = buildings.find((item) => item.id === building.type)!;
+  const effect = buildingEffects[building.type];
+  const producedGood = buildingProducedGood(building);
+  const educationName = effect.education === "high-school" ? "High school" : effect.education === "college" ? "College" : "None";
 
   return (
     <section className="building-details" aria-label="Building details">
@@ -18,6 +22,41 @@ const BuildingDetails: React.FC = () => {
       <p>{definition.description}</p>
       {definition.housing > 0 && <p>Housing: {definition.housing}</p>}
       {definition.jobs > 0 && <p>Jobs: {definition.jobs}</p>}
+      <p>Staffing: {Math.round((state.buildingStaffing[index] ?? 0) * 100)}% · Education: {educationName}</p>
+      {effect.needsPower && <p>Power: {state.powered[index] ? "Connected" : "Unpowered"}</p>}
+      <p>Estimated income: ${Math.round(state.buildingIncome[index] ?? 0)}/month gross · upkeep ${buildingUpkeep(building)}/month.</p>
+      {effect.capacity !== undefined && <p>Service capacity: {Math.floor(effect.capacity * (state.buildingStaffing[index] ?? 0))}; quality {effect.quality ?? "standard"}{effect.beauty ? `; beauty +${effect.beauty}` : ""}{effect.pollution ? `; pollution ${effect.pollution}` : ""}.</p>}
+      {effect.beds !== undefined && <p>Tourist beds: {Math.floor(effect.beds * (definition.jobs ? state.buildingStaffing[index] : 1))}; current guests: {state.buildingTourists[index] ?? 0}.</p>}
+      {(producedGood || effect.consumes) && <p>Goods: {producedGood ? `produces ${producedGood}` : ""}{effect.consumes?.length ? ` uses ${effect.consumes.join(", ")}` : ""}. Island production — {Object.entries(state.goods).filter(([, values]) => values.produced || values.processed).map(([good, values]) => `${good}: ${values.produced.toFixed(1)} produced, ${values.processed.toFixed(1)} processed`).join("; ") || "none"}</p>}
+      {building.type === "mine" && (
+        <>
+          <label>
+            Resource
+            <select value={building.mineResource ?? "gold"} onChange={(event) => {
+              const resource = mineResources.find((item) => item === event.target.value);
+              if (!resource) throw new Error("Invalid mine resource selection.");
+              game.setBuildingMineResource(index, resource);
+            }}>
+              {mineResources.map((resource) => <option value={resource} key={resource}>{resource[0].toUpperCase() + resource.slice(1)}</option>)}
+            </select>
+          </label>
+          <p>At full staffing: 1 load/month, ${mineResourcePrices[building.mineResource ?? "gold"]}/load before bonuses and upkeep. Gold can be processed into jewelry.</p>
+          <p>Resource selection and prices are provisional; terrain deposits are not yet simulated.</p>
+        </>
+      )}
+      {building.type === "immigration-office" && (
+        <label>
+          Immigration policy
+          <select value={building.immigrationOption ?? "open"} onChange={(event) => {
+            const option = immigrationOptions.find((item) => item === event.target.value);
+            if (!option) throw new Error("Invalid immigration option.");
+            game.setBuildingImmigrationOption(index, option);
+          }}>
+            <option value="open">Open (+1 immigrant/month)</option>
+            <option value="closed">Closed (no immigration)</option>
+          </select>
+        </label>
+      )}
       {building.type === "farm" && (
         <>
           <label>

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { agriProps } from "./agri-props";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 const TILE = 0xa6573b;
 const COLUMN = 0xe3ddce;

@@ -94,6 +94,7 @@ Dimensions are in tiles (W×L) along the orthogonal grid axes. Buildings marked
 | Prison | 3×4 | Detains criminals and political dissidents. |
 | Army Base (PI) | 4×5 | Houses soldiers and tanks. |
 | Palace | 5×6 | Pre-placed at map start; cannot be demolished or rebuilt. |
+| Colonial Fort | 4×4 | Scenario landmark; Palmarico shows it only in the developer showcase (size estimated). |
 
 ### Human Services
 
@@ -169,3 +170,29 @@ against the isometric tile mesh.
   (`[` / `]`) turns a building in 90-degree steps and swaps W and L.
 - A farm's 3×4 footprint holds the farmhouse; its crops are planted on nearby
   open tiles and give way when other buildings are built over them.
+
+## How Palmarico Models the Land
+
+The island is a height field on the same tile grid as the buildings
+(`src/logic/terrain.ts`, rendered by `src/map/TerrainMesh.ts`):
+
+- **Corner heights:** a 256×256-tile map stores one height per tile corner, so
+  each tile is a flat-shaded quad that can tilt; anything placed on the ground
+  reads the same interpolated height. Sea level is 0.
+- **Tile types:** every tile is water, sand, grass, jungle, dirt or rock. Sand
+  rims the coast, jungle and dirt patches cover the lowlands, and rock forms
+  cliffs and the high massif. The ground shader and minimap colour each tile by
+  its type.
+- **Building rules:** land buildings need every footprint corner on dry ground
+  (at least 0.6 above sea level), may not touch rock, and fail as too steep
+  when grading would move any corner by more than 3 units. Coastal buildings
+  (dock, fisherman's wharf, marina, beach site) need their back on dry land and
+  their front edge in the sea.
+- **Grading:** placing a building levels its footprint to a pad (the average
+  height, or an adjacent pad's level so terraces line up), locks those corners
+  so later grading cannot disturb them, blends a two-tile skirt into the
+  surrounding ground, and turns the footprint to dirt.
+- **Trees:** palms, fan palms and broadleaf trees grow per tile by type:
+  dense in jungle, scattered on grass and sand. Construction crews clear trees from a building's footprint;
+  automatically built shacks and starting buildings stay on open ground.
+- **Overlays:** G toggles the 1×1 tile grid and C the yellow 8×8 macro grid.

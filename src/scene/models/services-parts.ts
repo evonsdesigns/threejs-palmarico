@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { buildingTexture } from "../building-textures";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 export type Vec3 = [number, number, number];
 

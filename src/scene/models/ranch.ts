@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { agriProps } from "./agri-props";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 const BARN_RED = 0x8e4a36;
 const TRIM = 0xece7da;

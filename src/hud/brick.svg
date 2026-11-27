@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="96" viewBox="0 0 192 96">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".12" numOctaves="4" seed="31" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values=".85 0 0 0 .05  .65 0 0 0 .04  .45 0 0 0 .03  0 0 0 .5 0"/>
+    </filter>
+  </defs>
+  <rect width="192" height="96" fill="#514437"/>
+  <g stroke="#312d24" stroke-width="1">
+    <path fill="#845944" d="M1 1h45v20H1zM49 1h46v20H49zM98 1h45v20H98zM146 1h45v20h-45z"/>
+    <path fill="#725343" d="M1 25h21v20H1zM25 25h45v20H25zM73 25h45v20H73zM121 25h45v20h-45zM169 25h22v20h-22z"/>
+    <path fill="#905b45" d="M1 49h45v20H1zM49 49h46v20H49zM98 49h45v20H98zM146 49h45v20h-45z"/>
+    <path fill="#7b4e3e" d="M1 73h21v20H1zM25 73h45v20H25zM73 73h45v20H73zM121 73h45v20h-45zM169 73h22v20h-22z"/>
+  </g>
+  <g fill="none" stroke="#c09c7c" opacity=".5" stroke-width="1">
+    <path d="M3 3h37M52 3h38M101 3h34M149 3h36M4 27h15M28 27h35M76 27h37M124 27h36M172 27h15M4 51h36M52 51h37M101 51h34M149 51h34M4 75h14M28 75h35M76 75h36M124 75h36M172 75h15"/>
+  </g>
+  <rect width="192" height="96" filter="url(#grain)"/>
+  <g fill="#b9a17c" stroke="#66533e" stroke-width="1" opacity=".8">
+    <path d="M0 4 6 3l2 3 6-1 3 4-2 3-6 1-2 4-7-1zM57 47l5-3 5 1 4-3 4 3 5-1 2 4-3 4-8-1-3 4-6-2-5 1zM149 72l5-4 5 2 5-2 3 4 6 1 1 5-4 3-6-1-2 4-6-3-7 1-3-5z"/>
+  </g>
+  <g fill="#c6ad88" opacity=".55">
+    <path d="M3 4l9-2 4 4-5 3-7-1zM49 18l7-3 5 3-2 4h-8zM116 25l8-2 6 3-5 3-7-1zM68 43l9-4 4 3-5 4h-7zM142 50l10-2 4 4-7 2-6-2zM19 72l9-3 5 3-3 4h-8zM165 91l7-4 6 3-3 4h-9z"/>
+  </g>
+  <g fill="none" stroke="#342e26" opacity=".55">
+    <path d="M32 6l4 4-2 3 5 4M80 28l-5 5 3 3-4 5M119 53l4 3-1 5 5 3M43 77l4 4-2 4 5 4M174 5l-3 5 5 3"/>
+  </g>
+</svg>

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 import { buildingSurface, buildingTexture } from "../building-textures";
 
 export const texFor = (color: number) => {

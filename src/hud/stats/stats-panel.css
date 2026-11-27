@@ -1,24 +1,19 @@
 .island-stats {
   position: absolute;
-  right: 16px;
+  right: 0;
   bottom: 16px;
-  width: 140px;
+  width: var(--hud-stats-width);
   box-sizing: border-box;
   padding: 6px;
   color: #eee3c5;
   pointer-events: auto;
-  background-color: #786a53;
-  background-image:
-    linear-gradient(90deg, transparent 48%, rgba(35, 29, 21, .22) 50%, transparent 52%),
-    repeating-linear-gradient(0deg, rgba(35, 29, 21, .25) 0 2px, transparent 2px 14px),
-    linear-gradient(135deg, #a69877, #695840 55%, #9a8b6c);
-  background-size: 30px 28px, auto, auto;
-  border: 3px ridge #a89978;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, .45), inset 0 0 10px #41372a;
+  background: var(--hud-brick);
+  border: 5px ridge #92795b;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .45), inset 0 0 20px #35271d;
 }
 
 .island-stats__crest-area {
-  height: 110px;
+  height: calc(var(--hud-stats-width) - 48px);
   position: relative;
   display: flex;
   justify-content: center;
@@ -26,8 +21,8 @@
 }
 
 .island-stats__crest {
-  width: 108px;
-  height: 108px;
+  width: calc(var(--hud-stats-width) - 52px);
+  height: calc(var(--hud-stats-width) - 52px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -35,9 +30,11 @@
   position: relative;
   overflow: hidden;
   border-radius: 50%;
-  border: 4px ridge #a79469;
-  background: radial-gradient(circle at 50% 48%, #687444 0%, #394d2d 35%, #192b20 75%, #111b15 100%);
-  box-shadow: inset 0 0 18px #10180e, 0 2px 3px #342a1d;
+  border: 6px ridge #a48a61;
+  background:
+    radial-gradient(circle at 50% 48%, #9a8b4e55, transparent 40%, #111b15ee 85%),
+    repeating-conic-gradient(from 6deg, #5f6b3c 0 4deg, #35472b 6deg 11deg, #263825 13deg 18deg);
+  box-shadow: inset 0 0 24px #10180e, 0 0 0 3px #493727, 0 2px 4px #22190f;
 }
 
 .island-stats__crest-sun {
@@ -48,6 +45,16 @@
   background: radial-gradient(circle, rgba(229, 200, 104, .35), transparent 68%);
 }
 
+.island-stats__crest::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../stone.svg");
+  opacity: .25;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
 .island-stats__crest-name, .island-stats__crest-subtitle {
   position: relative;
   color: #e6d39a;
@@ -55,7 +62,7 @@
 }
 
 .island-stats__crest-name {
-  font: bold 13px Georgia, serif;
+  font: bold clamp(11px, 1.35vw, 19px) Georgia, serif;
   letter-spacing: .03em;
 }
 
@@ -187,10 +194,7 @@
 .music-player__error { color: #ffd1b9; }
 
 @media (min-width: 1200px) {
-  .island-stats { width: 220px; padding: 8px; }
-  .island-stats__crest-area { height: 160px; }
-  .island-stats__crest { width: 158px; height: 158px; border-width: 6px; }
-  .island-stats__crest-name { font-size: 19px; }
+  .island-stats { padding: 8px; }
   .island-stats__crest-subtitle { font-size: 9px; }
   .island-stats__speed { width: 39px; height: 47px; }
   .island-stats__readout span { font-size: 9px; }

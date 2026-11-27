@@ -3,25 +3,14 @@ import Box from "@mui/material/Box";
 import MenuBuildSubMenu, { BuildMenuSubMenuId } from "./MenuBuildSubMenu";
 import BuildTiles from "./BuildTiles";
 import * as buttonData from "./button-data";
-import { BuildingType } from "../../logic/game";
+import { buildings, type BuildingType } from "../../logic/game";
 
-const availableBuildings: Record<string, BuildingType> = {
-  house: "house",
-  apartment: "apartment",
-  tenement: "tenement",
-  condominium: "condominium",
-  "luxury-house": "luxury-house",
-  bunkhouse: "bunkhouse",
-  "country-house": "country-house",
-  bungalow: "bungalow",
-  ranch: "ranch",
-  farm: "farm",
-  marketplace: "market",
-  clinic: "clinic",
-  pub: "pub",
-  restaurant: "restaurant",
-  "teamsters-office": "teamsters-office",
-};
+// Every placeable building is available under its button id; the marketplace button builds a market.
+const availableBuildings: Record<string, BuildingType> = Object.fromEntries([
+  ...buildings.filter((item) => item.id !== "palace" && item.id !== "shack" && item.id !== "colonial-fort")
+    .map((item) => [item.id, item.id]),
+  ["marketplace", "market"],
+]);
 
 const MenuBuild: React.FC = () => {
   const [subMenu, setSubMenu] = React.useState<BuildMenuSubMenuId>(BuildMenuSubMenuId.Housing);

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 import { beam, detailedWindow, door, downspout, face, hipRoof, palm, plant, pixelText, stain, stringLights, wallLamp } from "./services-parts";
 
 const WALL = 0xe9c98d;

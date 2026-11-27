@@ -336,6 +336,11 @@ export class Residents {
       && walkSegmentClear(start, end, RESIDENT_CLEARANCE, (tile) => this.terrainWalkable(tile));
   }
 
+  /** Forget cached walkability after the ground under some tiles was graded. */
+  invalidateTerrain() {
+    this.terrain.clear();
+  }
+
   private terrainWalkable(tile: GridTile) {
     const key = `${tile.x},${tile.z}`;
     if (!this.terrain.has(key)) {

@@ -61,6 +61,8 @@ export function findWindowAnchors(model: THREE.Object3D): WindowAnchor[] {
   const rotation = new THREE.Quaternion();
   const scale = new THREE.Vector3();
   const anchors: WindowAnchor[] = [];
+  const center = model.userData.windowAnchorCenter instanceof THREE.Vector3
+    ? model.userData.windowAnchorCenter : new THREE.Vector3();
   model.traverse((child) => {
     if (!(child instanceof THREE.InstancedMesh) || !(child.material as THREE.Material).userData?.nightLight) return;
     for (let i = 0; i < child.count; i++) {
@@ -70,7 +72,7 @@ export function findWindowAnchors(model: THREE.Object3D): WindowAnchor[] {
       if (scale.z > 0.1 || scale.x < 0.35 || scale.y < 0.45 || Math.abs(normal.y) > 0.1) continue;
       normal.y = 0;
       normal.normalize();
-      if (normal.x * position.x + normal.z * position.z < 0) normal.negate();
+      if (normal.x * (position.x - center.x) + normal.z * (position.z - center.z) < 0) normal.negate();
       anchors.push({
         position: position.clone().addScaledVector(normal, scale.z / 2 + 0.006),
         normal, width: scale.x, height: scale.y,

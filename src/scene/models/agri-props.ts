@@ -1,4 +1,4 @@
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 // Shared prop builders for the farm, ranch and market models.
 export function agriProps(kit: Kit) {

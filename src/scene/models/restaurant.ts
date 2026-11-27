@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { Kit } from "./kit";
-import { beam, detailedWindow, door, Face, face, hipRoof, plant, stain, stripeTexture, wallLamp } from "./services-parts";
+import type { Kit } from "./kit";
+import { beam, detailedWindow, door, type Face, face, hipRoof, plant, stain, stripeTexture, wallLamp } from "./services-parts";
 
 const WALL = 0xece7da;
 const TRIM = 0xf2eee2;

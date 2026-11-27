@@ -1,6 +1,6 @@
-import { FarmCrop } from "../../logic/game";
+import type { FarmCrop } from "../../logic/game";
 import { GRID_TILE_SIZE } from "../../logic/grid";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 export interface CropTile {
   x: number;

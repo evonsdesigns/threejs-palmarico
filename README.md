@@ -32,24 +32,28 @@ shows the selected building and its cost. Find houses, apartments,
 condominiums, bunkhouses, tenements and country houses under Housing; farms and ranches
 under Farms and Mines; bungalows under Tourist Accommodations; pubs and restaurants under
 Entertainment; the Teamster's Office under Infrastructure; and Marketplace and
-Clinic under Human Services. Bungalows are placeable, but tourism is not simulated yet.
+Clinic under Human Services. Tourism requires staffed docks or airports and staffed accommodations; visitor totals and tourism income appear in the Almanac.
 The island uses a square construction grid of 4-unit tiles. Each building
 occupies the W×L tile footprint listed in `docs/game-info.md` (for example a
 1×1 shack, 2×3 house, 4×3 farm or 6×5 palace); the faint terrain grid and
-highlighted squares show placement. Press `[` or `]`, or right-click, while
+highlighted squares show placement. Press G to show the tile grid and C for the
+yellow macro grid. The land is a Tropico-style height field of sand, grass,
+jungle, dirt and rock tiles with a mountain in the north-west. Construction
+grades each footprint to a level pad, and coastal buildings must sit on the shore
+facing the sea (see `docs/game-info.md`). Press `[` or `]`, or right-click, while
 placing to rotate the building 90 degrees, which swaps its width and length.
-Move the cursor over level dry land and click to build. Green previews indicate valid sites; red previews
-indicate an obstruction (including trees or residents), uneven terrain, water, or insufficient funds. Press
+Move the cursor over dry land and click to build; trees on the site are cleared. Green previews indicate valid sites; red previews
+indicate an obstruction (another building or a resident), terrain too steep to grade, rock, water, or insufficient funds. Press
 Escape or click the selected building again to cancel. With no construction
 selected, click a building to inspect it and change a farm's crop, a pub's
 dress code, a restaurant's table setting or a Teamster's Office's work hours. Escape closes the details. Drag or use the arrow
 keys to pan; scroll or use the minimap buttons to zoom. The minimap buttons also
-rotate the camera. In the stats panel, click the green bars to select game speed
-from 1× to 5×; the pause button pauses or resumes at the selected speed. The remaining building
-options and edicts are placeholders and are not implemented yet.
+rotate the camera. The minimap outlines the camera's view at sea level; click
+the map to move there, or focus it and use the arrow keys to pan. In the stats panel, click the green bars to select game speed
+from 1× to 5×; the pause button pauses or resumes at the selected speed. Building options include crops, pub dress code, restaurant table settings, teamster work hours, and immigration policy. Open **Edicts** to browse the five policy categories; each entry shows its cost, requirements, effect, active status, and cooldown, and toggle edicts can be cancelled.
 
 The visual day–night cycle lasts two minutes at 1× speed, follows the selected
-simulation speed and pauses with the game. Buildings and palms cast sunlight
+simulation speed and pauses with the game. Buildings and trees cast sunlight
 shadows; the water darkens at night. Windows and lamps glow after dusk, with
 local exterior lighting on buildings near the camera.
 
@@ -84,7 +88,7 @@ allocated in construction order. Capacity is reduced by the island-wide
 staffing ratio, rounded down, and each visit earns $15 before upkeep. Inspect a
 pub to see its estimated visits and income. These are prototype assumptions:
 individual citizens, actual wealth, tourists and service quality effects are
-not simulated yet.
+not included in pub visit estimates yet; service quality does not alter visit routing.
 
 Restaurants cost $2,000, provide two cook jobs, and seat up to ten diners with
 base service quality 40. Choose a table setting when placing or inspecting one:
@@ -104,13 +108,21 @@ combined bonus is capped at 30% and scales with the island-wide staffing ratio.
 Choose work hours when placing or inspecting an office. Individual teamsters,
 goods and job happiness are not simulated yet.
 
+Mines produce one load per month at full staffing. Inspect a mine to select
+gold, iron or bauxite: their estimated raw export prices are $260, $160 and
+$200 per load respectively, before bonuses and upkeep. Jewelry factories use
+gold but not iron or bauxite. Existing mines default to gold. This selector is
+provisional: mineral deposits, depletion and deposit-dependent placement are
+not yet simulated.
+
 At 1× speed, one month passes every five seconds; higher speeds accelerate
 both the calendar and resident movement. Construction costs are paid immediately;
 each month the treasury receives a $100 grant plus building revenue minus
-upkeep. Farms supply food, houses provide capacity, and clinics improve
-approval. Ranches also produce food and income. Production scales with the
-population available for all jobs. The slush fund starts at $0; ways to add to
-or spend it have not been implemented. If
+operating upkeep and active edict costs, with recurring edict income added. Farms
+supply food, houses provide capacity, and clinics improve approval. Ranches also
+produce food and income. Production scales with the population available for all
+jobs. The slush fund starts at $0 and receives proceeds from the Special Building
+Permit edict. If
 approval is at least 60%, residents arrive when there are spare homes and jobs;
 if it falls below 35%, residents leave.
 
@@ -122,7 +134,8 @@ enough to pass. When they reach a home, workplace or service they go inside and
 disappear from view for a while before stepping out again. Residents only enter
 their own home; they never go inside other residents' housing. These routines are a visual first step: people do not yet use roads, and their
 individual movements do not yet drive production, needs or the aggregate pub
-visit estimates. Churches are not implemented yet. The game currently has no
-save system, individual citizen needs, elections, roads, or win/loss conditions.
+visit estimates. The game currently has no save system, individual citizen needs or roads. Elections and superpower relations now create win/loss conditions.
 
 Ground textures: [Cethiel's texture collection](https://opengameart.org/content/textures-collection).
+
+Newly added buildings pay operating upkeep in proportion to their staffed fraction (staffless landscape items retain fixed upkeep), keeping the development showcase affordable while preserving the original buildings’ monthly balance rules.

@@ -37,7 +37,7 @@
   background: rgba(25, 30, 25, .75);
   font: 9px/1.1 Arial, sans-serif;
 }
-.build-tiles__error { grid-column: 1 / -1; margin: 0; color: #ffd1b9; font: 11px Arial, sans-serif; }
-.build-tiles__crop { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: #efe3c6; font: 12px Arial, sans-serif; }
+.build-tiles__error { grid-column: 1 / -1; margin: 0; padding: 3px; color: #ffd1b9; background: #4a3028; font: 11px Arial, sans-serif; }
+.build-tiles__crop { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: #30271d; font: bold 12px Arial, sans-serif; }
 .build-tiles__crop select { flex: 1; min-width: 0; padding: 3px; color: #efe3c6; background: #342f28; border: 1px solid #a89978; }
-.build-tiles__note { grid-column: 1 / -1; margin: 0; color: #d7c7a6; font: 10px Arial, sans-serif; }
+.build-tiles__note { grid-column: 1 / -1; margin: 0; color: #30271d; font: 10px Arial, sans-serif; }

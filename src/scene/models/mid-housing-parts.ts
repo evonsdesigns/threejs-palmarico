@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { buildingTexture } from "../building-textures";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 type V3 = [number, number, number];
 

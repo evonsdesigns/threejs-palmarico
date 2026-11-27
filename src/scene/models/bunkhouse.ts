@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { buildingTexture } from "../building-textures";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 import { cylinder, downspout, panelDoor, ribs, shrub, shutteredWindow } from "./mid-housing-parts";
 
 type V3 = [number, number, number];

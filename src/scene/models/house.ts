@@ -1,6 +1,6 @@
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 import {
-  barrel, bush, door, gableRoof, laundry, picketFence, rng, shapes, shutteredWindow, slope, wall, WindowStyle,
+  barrel, bush, door, gableRoof, laundry, picketFence, rng, shapes, shutteredWindow, slope, wall, type WindowStyle,
 } from "./small-homes-parts";
 
 const WALL = 0x537a9a;

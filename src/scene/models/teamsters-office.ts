@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { Kit } from "./kit";
-import { createParts, Face } from "./teamster-parts";
+import type { Kit } from "./kit";
+import { createParts, type Face } from "./teamster-parts";
 
 const WALL = 0xe3ddce;
 const STONE = 0x92908a;

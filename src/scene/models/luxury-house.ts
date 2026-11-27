@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { buildingTexture } from "../building-textures";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 import { arcade, archHeads, cylinder, downspout, hipRoof, palm, panelDoor, shrub, shutteredWindow, wallBox } from "./mid-housing-parts";
 
 export function buildLuxuryHouse(kit: Kit) {

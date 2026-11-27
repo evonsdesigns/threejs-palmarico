@@ -239,13 +239,13 @@ export function buildCondominium(kit: Kit) {
       if (f > 0 && (f + (s > 0 ? 0 : 1)) % 2 === 0) acUnit(wx, y + 0.75, 1.8, facing);
       if (s > 0 && f > 0) {
         window(wx, y + 1.25, -0.7, 0.95, 2.2, facing);
-        box(slab, x1 + 0.42, y - 0.04, -0.7, 0.84, 0.18, 1.9);
-        box(trim, x1 + 0.82, y + 0.08, -0.7, 0.1, 0.1, 1.9);
-        box(iron, x1 + 0.82, y + 1.0, -0.7, 0.1, 0.07, 1.9);
-        for (let bz = -1.6; bz <= 0.21; bz += 0.15) box(iron, x1 + 0.82, y + 0.55, bz, 0.035, 0.9, 0.035);
+        box(slab, x1 + 0.4, y - 0.04, -0.7, 0.8, 0.18, 1.9);
+        box(trim, x1 + 0.78, y + 0.08, -0.7, 0.1, 0.1, 1.9);
+        box(iron, x1 + 0.78, y + 1.0, -0.7, 0.1, 0.07, 1.9);
+        for (let bz = -1.6; bz <= 0.21; bz += 0.15) box(iron, x1 + 0.78, y + 0.55, bz, 0.035, 0.9, 0.035);
         for (const ez of [-1.62, 0.22]) {
-          box(iron, x1 + 0.42, y + 1.0, ez, 0.8, 0.07, 0.07);
-          for (let bx = x1 + 0.1; bx < x1 + 0.8; bx += 0.15) box(iron, bx, y + 0.55, ez, 0.035, 0.9, 0.035);
+          box(iron, x1 + 0.4, y + 1.0, ez, 0.76, 0.07, 0.07);
+          for (let bx = x1 + 0.1; bx < x1 + 0.76; bx += 0.15) box(iron, bx, y + 0.55, ez, 0.035, 0.9, 0.035);
         }
         box(0xb06a42, x1 + 0.5, y + 0.2, -1.3, 0.3, 0.3, 0.3);
         shrub(kit, x1 + 0.5, y + 0.3, -1.3, 0.3, 0x4f8a3c);

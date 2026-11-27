@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useSyncExternalStore } from "react";
-import { buildings, BuildingType, farmCropProduction, farmCrops, game, pubDressCodes, restaurantQuality, restaurantTableSettingDetails, restaurantTableSettings, teamsterWorkModeDetails, teamsterWorkModes } from "../../logic/game";
+import { buildings, type BuildingType, buildingCost, farmCropProduction, farmCrops, game, missingRequirement, pubDressCodes, restaurantQuality, restaurantTableSettingDetails, restaurantTableSettings, teamsterWorkModeDetails, teamsterWorkModes } from "../../logic/game";
 import { ButtonData } from "./button-data";
 import { buildingThumbnails } from "./building-thumbnails";
 import "./build-tiles.css";
@@ -10,7 +10,8 @@ interface BuildTilesProps {
 }
 
 const BuildTiles: React.FC<BuildTilesProps> = ({ buttons, availableBuildings }) => {
-  const { selected, farmCrop, pubDressCode, restaurantTableSetting, teamsterWorkMode } = useSyncExternalStore(game.subscribe, game.getSnapshot);
+  const state = useSyncExternalStore(game.subscribe, game.getSnapshot);
+  const { selected, farmCrop, pubDressCode, restaurantTableSetting, teamsterWorkMode } = state;
   const [images, setImages] = useState<Map<BuildingType, string>>(new Map());
   const [imageError, setImageError] = useState(false);
 
@@ -97,8 +98,10 @@ const BuildTiles: React.FC<BuildTilesProps> = ({ buttons, availableBuildings }) 
         const previewType = type ?? (button.id === "palace" ? "palace" : null);
         const image = previewType ? images.get(previewType) : undefined;
         const definition = buildings.find((item) => item.id === type);
+        const requirement = type ? missingRequirement(type, state) : null;
+        const cost = type ? buildingCost(type, state) : 0;
         const description = definition
-          ? `${button.name}: ${definition.description} Cost: $${definition.cost}; upkeep: $${definition.upkeep}/month.`
+          ? `${button.name}: ${definition.description} ${requirement ? `${requirement}. ` : ""}Cost: $${cost}; upkeep: $${definition.upkeep}/month.`
           : `${button.name}: Not available yet.`;
         return (
           <div className="build-tile-wrap" key={button.id} title={description}>
@@ -106,7 +109,7 @@ const BuildTiles: React.FC<BuildTilesProps> = ({ buttons, availableBuildings }) 
               type="button"
               id={button.id}
               className="build-tile"
-              disabled={!type}
+              disabled={!type || Boolean(requirement)}
               aria-label={button.name}
               aria-pressed={type ? selected === type : undefined}
               onClick={() => {
@@ -121,7 +124,7 @@ const BuildTiles: React.FC<BuildTilesProps> = ({ buttons, availableBuildings }) 
                   <span>{type ? button.name : "Unavailable"}</span>
                 </span>
               )}
-              {!type && <span className="build-tile__unavailable" aria-hidden="true">{button.name}</span>}
+              {(!type || requirement) && <span className="build-tile__unavailable" aria-hidden="true">{requirement ?? button.name}</span>}
             </button>
           </div>
         );

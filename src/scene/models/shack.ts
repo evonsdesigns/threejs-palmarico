@@ -1,4 +1,4 @@
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 import { barrel, chicken, crate, laundry, rng, shapes, slope, wall } from "./small-homes-parts";
 
 const PLANKS = [0x7d6b55, 0x755b43, 0x9a8967, 0x8e7b60, 0xb28b60, 0x6c5a47];

@@ -1,4 +1,4 @@
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 export type Face = { x: number; z: number; yaw: number };
 

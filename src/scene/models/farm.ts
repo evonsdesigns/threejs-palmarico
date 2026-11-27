@@ -1,6 +1,6 @@
-import { FarmCrop } from "../../logic/game";
+import type { FarmCrop } from "../../logic/game";
 import { agriProps } from "./agri-props";
-import { Kit } from "./kit";
+import type { Kit } from "./kit";
 
 const TILE = 0xa6573b;
 const PLASTER = 0xe9c98d;
