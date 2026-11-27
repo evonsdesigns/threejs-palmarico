@@ -1,242 +1,113 @@
 import * as THREE from "three";
 import type { Kit } from "./kit";
-import { beam, bench, detailedWindow, door, downspout, face, palm, pixelText, plant, stain, wallLamp } from "./services-parts";
+import { beam, bench, detailedWindow, face, stain, wallLamp, type Face } from "./services-parts";
 
-const WALL = 0xece3cd;
-const TRIM = 0xf0ebdc;
-const RED = 0xc34d42;
-const STONE = 0xb4b5aa;
-const LOUVER = 0xcfd4cc;
-const SHUTTER = 0x6f9cc4;
+const WALL = 0xe9c98d;
+const TRIM = 0xd8c58e;
+const RED = 0xa5423e;
+const ROOF = 0x55574a;
 
-/** Red cross painted/mounted on a wall face. */
-function cross(F: ReturnType<typeof face>, lat: number, y: number, size: number, out = 0.03, backing = 0xf7f4ea) {
-  F.put(backing, lat, y, out, size * 1.25, size * 1.25, 0.04);
-  F.put(RED, lat, y, out + 0.03, size, size * 0.32, 0.03);
-  F.put(RED, lat, y, out + 0.03, size * 0.32, size, 0.03);
+function cross(F: Face, lat: number, y: number, size: number) {
+  F.put(0xd8d0a6, lat, y, 0.035, size * 1.65, size * 1.65, 0.035);
+  for (let row = -3; row <= 3; row++) {
+    F.put(0xa6a383, lat, y + row * size * 0.21, 0.06, size * 1.5, 0.025, 0.025);
+  }
+  F.put(RED, lat, y, 0.085, size, size * 0.31, 0.035);
+  F.put(RED, lat, y, 0.085, size * 0.31, size, 0.035);
 }
 
 export function buildClinic(kit: Kit) {
   const { box, solid } = kit;
+  box(0xa59a7d, 0, 0.04, 0, 11.9, 0.08, 7.9);
+  box(0xb9ac8e, 0, 0.095, 0, 11.65, 0.03, 7.65);
 
-  // Site: concrete apron, walkway, kerb and drive markings
-  box(0xbdb8a8, 0, 0.03, 0, 12, 0.06, 8);
-  box(0xd1ccbd, -1.2, 0.065, 3.85, 2.6, 0.02, 0.3);
-  for (let x = -5.5; x <= 5.5; x += 1) box(0xaaa596, x, 0.065, 0, 0.03, 0.01, 7.9);
-  box(0x9d998c, 0, 0.09, -3.92, 12, 0.12, 0.16);
-  box(0x9d998c, -5.92, 0.09, 0, 0.16, 0.12, 8);
+  const wing = (x: number, z: number, w: number, d: number, height: number) => {
+    box(0x9e8a65, x, 0.22, z, w + 0.12, 0.3, d + 0.12);
+    box(WALL, x, height / 2 + 0.14, z, w, height - 0.28, d);
+    box(RED, x, 0.47, z, w + 0.04, 0.64, d + 0.04);
+    box(0xc5ac77, x, height - 0.35, z, w + 0.18, 0.18, d + 0.18);
+    box(TRIM, x, height - 0.16, z, w + 0.3, 0.22, d + 0.3);
+    box(ROOF, x, height + 0.015, z, w - 0.22, 0.08, d - 0.22);
+    for (const pz of [z - d / 2, z + d / 2]) {
+      box(WALL, x, height + 0.27, pz, w + 0.14, 0.5, 0.18);
+      box(TRIM, x, height + 0.55, pz, w + 0.26, 0.1, 0.28);
+    }
+    for (const px of [x - w / 2, x + w / 2]) {
+      box(WALL, px, height + 0.27, z, 0.18, 0.5, d);
+      box(TRIM, px, height + 0.55, z, 0.28, 0.1, d + 0.2);
+      for (const pz of [z - d / 2, z + d / 2]) {
+        box(0xcab984, px, height + 0.59, pz, 0.31, 0.16, 0.31);
+        box(RED, px, height + 0.73, pz, 0.14, 0.15, 0.14);
+        for (let y = 0.85; y < height - 0.4; y += 0.48) {
+          box(y % 0.96 < 0.5 ? TRIM : 0xbbaa7f, px, y, pz, 0.3, 0.23, 0.3);
+        }
+      }
+    }
+    for (let pz = z - d / 2 + 0.45; pz < z + d / 2 - 0.3; pz += 0.7) {
+      box(0x63634d, x, height + 0.065, pz, w - 0.4, 0.02, 0.025);
+    }
+    for (let i = 0; i < 16; i++) {
+      const px = x + Math.sin(i * 5.17) * (w / 2 - 0.4);
+      const pz = z + Math.cos(i * 3.71) * (d / 2 - 0.4);
+      box(i % 2 ? 0x666651 : 0x454b41, px, height + 0.07, pz, 0.18 + i % 3 * 0.12, 0.015, 0.1 + i % 4 * 0.1);
+    }
+  };
 
-  // Plinth and body (walls y 0.5..3.9)
-  box(STONE, 0, 0.25, -0.85, 10.8, 0.5, 5.5);
-  box(0xa3a498, 0, 0.47, -0.85, 10.9, 0.06, 5.6);
-  box(WALL, 0, 2.2, -0.85, 10.4, 3.4, 5.1);
-  box(0xbcb8aa, 0, 0.78, -0.85, 10.46, 0.55, 5.16);
-  box(RED, 0, 3.35, -0.85, 10.44, 0.14, 5.14);
-  box(TRIM, 0, 3.97, -0.85, 10.66, 0.2, 5.36);
-  box(TRIM, 0, 4.1, -0.85, 10.52, 0.08, 5.22);
-  for (const x of [-5.15, 5.15]) for (const z of [1.65, -3.35]) box(TRIM, x, 2.2, z, 0.2, 3.4, 0.2);
+  // A taller, deep entrance block and a lower treatment wing form the recessed forecourt.
+  wing(-3.45, -0.3, 3.65, 6.35, 4.65);
+  wing(1.75, -1.02, 6.75, 4.9, 3.35);
 
-  // Parapet with coping and flat roof
-  box(WALL, 0, 4.42, 1.62, 10.4, 0.6, 0.16);
-  box(WALL, 0, 4.42, -3.32, 10.4, 0.6, 0.16);
-  for (const x of [-5.12, 5.12]) box(WALL, x, 4.42, -0.85, 0.16, 0.6, 5.1);
-  box(0xd8d4c6, 0, 4.76, 1.62, 10.5, 0.08, 0.26);
-  box(0xd8d4c6, 0, 4.76, -3.32, 10.5, 0.08, 0.26);
-  for (const x of [-5.12, 5.12]) box(0xd8d4c6, x, 4.76, -0.85, 0.26, 0.08, 5.2);
-  box(0x5d614d, 0, 4.12, -0.85, 10.06, 0.1, 4.8);
-  for (let x = -4.4; x <= 4.4; x += 1.1) box(0x6b6e5c, x, 4.18, -0.85, 0.05, 0.02, 4.75);
-  box(0x50534a, 0, 4.18, -0.85, 10.04, 0.02, 0.05);
-  // Scuppers through the parapet
-  for (const z of [1.2, -2.9]) box(0x8c9089, 5.3, 4.2, z, 0.3, 0.12, 0.2);
-
-  // Water tank on steel stand with ladder
-  for (const dx of [-0.55, 0.55]) for (const dz of [-0.55, 0.55]) box(0x4f5450, -3.5 + dx, 4.5, -2.0 + dz, 0.1, 0.7, 0.1);
-  box(0x5a5f5a, -3.5, 4.86, -2.0, 1.4, 0.08, 1.4);
-  for (const dz of [-0.55, 0.55]) beam(kit, 0x4f5450, [-4.05, 4.2, -2.0 + dz], [-2.95, 4.8, -2.0 + dz], 0.05);
-  solid(new THREE.CylinderGeometry(0.68, 0.68, 1.2, 12), 0x5b6f78, -3.5, 5.5, -2.0);
-  solid(new THREE.ConeGeometry(0.72, 0.28, 12), 0x4b5d66, -3.5, 6.24, -2.0);
-  solid(new THREE.CylinderGeometry(0.7, 0.7, 0.07, 12), 0x3f4f57, -3.5, 5.2, -2.0);
-  solid(new THREE.CylinderGeometry(0.7, 0.7, 0.07, 12), 0x3f4f57, -3.5, 5.8, -2.0);
-  box(0x3f4f57, -3.5, 6.42, -2.0, 0.22, 0.1, 0.22);
-  for (const dx of [-0.2, 0.2]) box(0x6b706b, -3.5 + dx, 5.2, -1.25, 0.04, 2.0, 0.04);
-  for (let y = 4.4; y < 6.1; y += 0.3) box(0x6b706b, -3.5, y, -1.25, 0.4, 0.04, 0.04);
-  beam(kit, 0x8c9089, [-3.5, 4.9, -1.35], [-1.0, 4.25, -1.0], 0.07);
-
-  // Rooftop AC condensers with fans and conduit
-  for (const [x, z] of [[1.2, -2.2], [2.7, -2.2]]) {
-    box(0x9a9c95, x, 4.22, z, 1.1, 0.12, 0.85);
-    box(0x85867c, x, 4.6, z, 1.0, 0.65, 0.75);
-    box(0x3d3f3b, x, 4.94, z, 0.6, 0.03, 0.6);
-    for (let d = -0.24; d <= 0.24; d += 0.12) box(0x6a6c66, x + d, 4.96, z, 0.03, 0.02, 0.6);
-    for (let d = -0.4; d <= 0.4; d += 0.1) box(0x6a6c66, x + d, 4.6, z + 0.38, 0.03, 0.5, 0.02);
-    box(0x6a6c66, x + 0.6, 4.3, z, 0.14, 0.14, 0.14);
+  const entry = face(kit, -3.45, 2.88, 0);
+  cross(entry, 0, 3.37, 0.9);
+  for (const lat of [-1.4, -0.7, 0, 0.7, 1.4]) {
+    beam(kit, 0x9c895d, [-3.45 + lat, 4.05, 2.98], [-3.45 + lat, 4.4, 3.18], 0.09, 0.12);
   }
-  beam(kit, 0x707470, [1.8, 4.3, -2.2], [1.8, 4.3, -0.4], 0.08);
-    // Vent stacks, roof hatch, skylight
-  for (const [x, z] of [[-1.2, -2.6], [4.2, 0.6], [-0.4, 0.8]]) {
-    box(0x8c9089, x, 4.45, z, 0.16, 0.6, 0.16);
-    box(0x6e716c, x, 4.8, z, 0.28, 0.08, 0.28);
+  entry.put(0x383c31, -0.2, 1.63, 0.035, 1.28, 2.25, 0.05);
+  for (const dx of [-0.88, 0.5]) entry.put(TRIM, dx, 1.65, 0.1, 0.14, 2.5, 0.16);
+  entry.put(0xc3a574, -0.19, 2.94, 0.16, 1.6, 0.17, 0.45);
+  for (let x = -0.82; x < 0.5; x += 0.18) {
+    entry.put(x < -0.3 ? 0xa76d40 : 0x825a36, x, 2.98, 0.3, 0.17, 0.12, 0.48);
   }
-  box(0xa7a89f, 3.8, 4.3, -0.7, 1.0, 0.28, 0.9);
-  box(0x868982, 3.8, 4.48, -0.7, 1.06, 0.08, 0.96);
-  box(TRIM, -1.6, 4.28, -0.4, 2.0, 0.24, 1.2);
-  box(0x87aab0, -1.6, 4.46, -0.4, 1.8, 0.1, 1.0);
-  for (const dx of [-0.45, 0, 0.45]) box(0xdcd6c7, -1.6 + dx, 4.52, -0.4, 0.04, 0.04, 1.0);
+  box(0x7d603c, -3.0, 1.59, 3.33, 0.1, 2.15, 0.88, 0, -0.3);
+  entry.put(0x557064, -1.22, 1.85, 0.09, 0.42, 0.85, 0.07);
+  for (const dx of [-1.4, -1.05]) entry.put(0xc6b785, dx, 1.85, 0.14, 0.045, 0.88, 0.04);
+  for (const y of [1.5, 1.68, 1.86, 2.04, 2.22]) entry.put(0xa4a78a, -1.22, y, 0.15, 0.42, 0.035, 0.04);
+  box(0xc8bc98, -3.65, 0.19, 3.23, 1.8, 0.18, 0.7);
+  const mat = solid(new THREE.CylinderGeometry(0.35, 0.35, 0.025, 24), 0x737e65, -3.7, 0.295, 3.45);
+  mat.scale.z = 0.68;
 
-  // Rooftop red cross sign facing the street
-  for (const dx of [-0.45, 0.45]) box(0x4f5450, -1.2 + dx, 4.95, 1.45, 0.08, 0.5, 0.08);
-  const roofSign = face(kit, -1.2, 1.48, 0);
-  cross(roofSign, 0, 5.8, 1.15, 0, 0xffffff);
-  roofSign.put(0xd8d4c6, 0, 5.8, -0.04, 1.55, 1.55, 0.06);
-
-  // ---------- Front facade (+z) ----------
-  const F = face(kit, 0, 1.7, 0);
-  // Entrance porch, steps with nosings
-  box(0xc9c4b5, -1.2, 0.25, 2.5, 3.8, 0.5, 1.6);
-  box(0xc9c4b5, -1.2, 0.167, 3.45, 2.6, 0.333, 0.3);
-  box(0xc9c4b5, -1.2, 0.083, 3.75, 2.6, 0.167, 0.3);
-  for (const [y, z] of [[0.5, 3.29], [0.333, 3.59], [0.167, 3.89]]) box(0x9d998c, -1.2, y, z, 2.6, 0.03, 0.04);
-  box(0x8e8a7e, -1.2, 0.51, 2.0, 1.6, 0.02, 0.6);
-  // Entrance doors with glazing and a fanlight
-  door(F, -1.2, 0.5, 1.8, 2.4, { leaf: 0xdfe3dc, frame: TRIM, trim: 0xc7ccc5, handle: 0x9fa6a3, double: true, glazed: true, glass: 0x7fa2ab });
-  F.put(0x7fa2ab, -1.2, 3.12, 0.06, 1.8, 0.3, 0.03);
-  F.put(TRIM, -1.2, 3.12, 0.08, 0.05, 0.3, 0.03);
-  // Canopy on two columns
-  box(TRIM, -1.2, 3.33, 2.6, 3.9, 0.2, 1.9);
-  box(0xdedad0, -1.2, 3.21, 2.6, 3.7, 0.04, 1.7);
-  box(RED, -1.2, 3.33, 3.56, 3.94, 0.12, 0.04);
-  for (const x of [-2.95, 0.55]) {
-    box(0xd8d4c6, x, 0.58, 3.25, 0.34, 0.16, 0.34);
-    box(TRIM, x, 1.9, 3.25, 0.22, 2.5, 0.22);
-    box(0xd8d4c6, x, 3.18, 3.25, 0.32, 0.12, 0.32);
+  const front = face(kit, 1.75, 1.46, 0);
+  for (const lat of [0, 2.25]) detailedWindow(front, lat, 1.85, 0.77, 1.75, { lintel: TRIM });
+  cross(front, -2.25, 2.08, 0.55);
+  for (let x = -1.25; x < 4.9; x += 0.63) {
+    beam(kit, 0x9c895d, [x, 2.62, 1.58], [x, 3.09, 1.86], 0.1, 0.12);
   }
-  box(0xfff3c4, -1.2, 3.18, 2.4, 0.5, 0.04, 0.3);
-  // Illuminated name sign on the canopy
-  box(0xf7f4ea, -1.2, 3.75, 3.35, 3.0, 0.6, 0.16);
-  box(0x4f5450, -1.2, 3.75, 3.26, 3.1, 0.66, 0.04);
-  const signF = face(kit, -1.2, 3.43, 0);
-  cross(signF, -1.1, 3.75, 0.42, 0.02);
-  pixelText(signF, "CLINICA", 0.25, 3.8, 0.02, 0.055, 0x3a5f8a);
-  signF.put(RED, 0.2, 3.52, 0.02, 2.0, 0.05, 0.02);
-
-  // Left jalousie windows, planter and bench
-  detailedWindow(F, -4.05, 2.2, 1.2, 1.5, { louvers: LOUVER });
-  box(0x9d998c, -4.15, 0.66, 2.1, 2.2, 0.32, 0.4);
-  box(0x756345, -4.15, 0.83, 2.1, 2.1, 0.04, 0.32);
-  for (let i = 0; i < 5; i++) box(i % 2 ? 0x4f8040 : 0x5f8f45, -5.0 + i * 0.42, 1.0, 2.1, 0.4, 0.32 + (i % 2) * 0.08, 0.3);
-  for (const x of [-4.8, -3.9, -3.5]) box(0xe0e3e8, x, 1.2, 2.12, 0.1, 0.09, 0.1);
-  bench(kit, -4.15, 2.78, 0.06, 1.8, 0);
-
-  // Right of door: window, ambulance bay with roll-up door
-  detailedWindow(F, 1.45, 2.2, 0.85, 1.4, { louvers: LOUVER });
-  F.put(0x2b2824, 3.65, 1.85, 0.01, 2.3, 2.7, 0.04);
-  for (let i = 0; i < 14; i++) F.put(i % 2 ? 0x737b77 : 0x85867c, 3.65, 0.6 + i * 0.18, 0.05, 2.26, 0.17, 0.05);
-  F.put(0x5a5f5a, 3.65, 0.56, 0.09, 2.26, 0.08, 0.06);
-  F.put(0x4f5450, 3.65, 1.1, 0.1, 0.4, 0.06, 0.06);
-  for (const side of [-1, 1]) {
-    for (let y = 0.65; y < 3.2; y += 0.3) {
-      F.put(0xe0c14a, 3.65 + side * 1.25, y, 0.07, 0.2, 0.15, 0.06);
-      F.put(0x2f2d2a, 3.65 + side * 1.25, y + 0.15, 0.07, 0.2, 0.15, 0.06);
+  front.put(TRIM, 0, 3.14, 0.13, 6.4, 0.12, 0.25);
+  const right = face(kit, 5.14, -1.02, Math.PI / 2);
+  cross(right, 0, 1.85, 1.15);
+  const left = face(kit, -5.3, -0.3, -Math.PI / 2);
+  for (const lat of [-1.65, 0.3, 1.85]) detailedWindow(left, lat, 2.2, 0.7, 1.35, { louvers: 0xbdbd9a, lintel: TRIM });
+  const back = face(kit, 0, -3.5, Math.PI);
+  for (const lat of [-3.6, -1.5, 0.7, 3.45]) detailedWindow(back, lat, 1.85, 0.75, 1.2, { louvers: 0xbdbd9a, lintel: TRIM });
+  for (const F of [entry, front, right, left, back]) {
+    for (let i = 0; i < 10; i++) {
+      const lat = (i / 9 - 0.5) * (F === front ? 5.8 : F === back ? 8.6 : F === left ? 4.5 : 2.6);
+      stain(F, lat, 0.87 + (i % 4) * 0.52, 0.13 + i % 3 * 0.14, 0.08 + i % 2 * 0.16, i % 3 ? 0xcbb27c : 0xae9b6b);
     }
   }
-  F.put(0x5a5f5a, 3.65, 3.25, 0.15, 2.7, 0.28, 0.3);
-  box(TRIM, 3.7, 3.58, 2.25, 2.95, 0.14, 1.1);
-  box(RED, 3.7, 3.58, 2.81, 2.97, 0.1, 0.03);
-  box(0xf7f4ea, 3.7, 3.85, 2.7, 2.2, 0.36, 0.06);
-  pixelText(face(kit, 3.7, 2.73, 0), "AMBULANCIA", 0, 3.85, 0.01, 0.04, RED);
-  // Ramp down from the bay to the drive, with kerbs, rail and markings
-  box(0xb9b4a5, 3.7, 0.25, 1.95, 2.6, 0.5, 0.5);
-  const run = 1.75;
-  const angle = Math.atan2(0.4, run);
-  const len = Math.hypot(0.4, run);
-  box(0xb9b4a5, 3.7, 0.3 - 0.05 * Math.cos(angle), 2.2 + run / 2 - 0.05 * Math.sin(angle), 2.6, 0.1, len, angle);
+
+  solid(new THREE.CylinderGeometry(0.3, 0.33, 0.38, 12), 0x74776b, 1.5, 3.58, -0.9);
+  solid(new THREE.CylinderGeometry(0.24, 0.24, 0.03, 12), 0x303a33, 1.5, 3.79, -0.9);
   for (let i = 0; i < 4; i++) {
-    const h = 0.4 - i * 0.11;
-    box(0xa8a395, 3.7, h / 2, 2.35 + i * 0.4, 2.5, h, 0.4);
+    box(0x777b6d, 1.5, 3.82, -0.9, 0.48, 0.035, 0.035, 0, i * Math.PI / 4);
   }
-  for (const t of [0.2, 0.45, 0.7]) {
-    box(0xe0c14a, 3.7, 0.5 - 0.4 * t + 0.012 * Math.cos(angle), 2.2 + run * t + 0.012 * Math.sin(angle), 2.2, 0.02, 0.12, angle);
-  }
-  for (const x of [2.45, 4.95]) beam(kit, 0x9d998c, [x, 0.6, 2.2], [x, 0.1, 2.2 + run], 0.12, 0.14);
-  for (const z of [2.25, 3.0, 3.8]) box(0xd8d4c6, 5.05, 0.45 + (z < 3 ? 0.4 : 0), z, 0.07, z < 3 ? 1.0 : 0.9, 0.07);
-  beam(kit, 0xd8d4c6, [5.05, 1.4, 2.0], [5.05, 0.9, 3.85], 0.06);
-  for (const x of [2.15, 5.55]) {
-    box(0xe0c14a, x, 0.45, 3.75, 0.2, 0.9, 0.2);
-    box(0x2f2d2a, x, 0.7, 3.75, 0.22, 0.12, 0.22);
-  }
-  box(0xe0c14a, 3.7, 0.065, 3.97, 3.4, 0.02, 0.05);
+  solid(new THREE.CylinderGeometry(0.1, 0.12, 0.38, 10), 0x929686, -3.4, 4.88, -0.1);
+  solid(new THREE.ConeGeometry(0.2, 0.13, 12), 0x626e64, -3.4, 5.14, -0.1);
 
-  // Front lamps, downspouts, weathering
-  wallLamp(F, -2.45, 2.6);
-  downspout(F, -4.85, 4.0);
-  stain(F, -4.2, 1.15, 1.0, 0.25);
-  stain(F, 1.45, 1.2, 0.6, 0.3);
-  stain(F, -5.2 + 0.4, 3.7, 0.5, 0.2, 0xdcd4c0);
-  stain(F, 0.3, 1.25, 0.4, 0.2, 0xdcd4c0);
-
-  // Flagpole with a white medical flag
-  box(0x9d998c, -5.5, 0.15, 3.5, 0.5, 0.3, 0.5);
-  box(0xd8dad6, -5.5, 2.9, 3.5, 0.09, 5.4, 0.09);
-  box(0xc9b16f, -5.5, 5.65, 3.5, 0.16, 0.16, 0.16);
-  for (let i = 0; i < 3; i++) box(0xf7f4ea, -5.25 + i * 0.4, 5.05, 3.5 + (i % 2 ? 0.05 : 0), 0.42, 0.8, 0.03, 0, (i % 2 ? 0.12 : -0.12));
-  box(RED, -4.85, 5.05, 3.59, 0.5, 0.15, 0.03);
-  box(RED, -4.85, 5.05, 3.59, 0.15, 0.5, 0.03);
-  beam(kit, 0x5a5c57, [-5.45, 1.2, 3.5], [-5.45, 5.5, 3.5], 0.02);
-
-  // Lamp post, plants, waste bin by the walk
-  box(0x3f4240, 1.0, 1.6, 3.65, 0.1, 3.2, 0.1);
-  box(0x3f4240, 1.0, 0.1, 3.65, 0.3, 0.2, 0.3);
-  box(0x3f4240, 1.0, 3.28, 3.65, 0.36, 0.08, 0.36);
-  box(0xf3d27a, 1.0, 3.45, 3.65, 0.26, 0.3, 0.26);
-  box(0x3f4240, 1.0, 3.64, 3.65, 0.32, 0.08, 0.32);
-  palm(kit, -3.55, 3.2, 0.06, 0.9);
-  plant(kit, 0.25, 2.0, 0.5, 0x9c5b3b, [0xe86a7a, 0xf3d27a]);
-  plant(kit, -2.6, 2.0, 0.5, 0x9c5b3b, [0xe86a7a, 0xf3d27a]);
-  box(0x4b6b4b, 1.6, 0.4, 3.65, 0.38, 0.7, 0.38);
-  box(0x3c573c, 1.6, 0.78, 3.65, 0.42, 0.06, 0.42);
-
-  // ---------- Right side (+x): painted cross, windows, AC, oxygen ----------
-  const R = face(kit, 5.2, -0.85, Math.PI / 2);
-  detailedWindow(R, 1.6, 2.2, 0.9, 1.4, { louvers: LOUVER });
-  detailedWindow(R, -1.6, 2.2, 0.9, 1.4, { louvers: LOUVER });
-  cross(R, 0, 2.3, 1.1);
-  downspout(R, 2.15, 4.0);
-  R.put(0x9a9c95, -1.6, 0.7, 0.2, 0.9, 0.08, 0.4);
-  R.put(0x85867c, -1.6, 1.0, 0.25, 0.8, 0.5, 0.5);
-  for (let d = -0.3; d <= 0.3; d += 0.1) R.put(0x5a5c57, -1.6 + d, 1.0, 0.51, 0.03, 0.4, 0.02);
-  R.put(0x8c9089, 0.9, 1.5, 0.08, 0.35, 0.45, 0.14);
-  R.put(0x5a5c57, 0.9, 1.5, 0.16, 0.25, 0.3, 0.02);
-  beam(kit, 0x5a5c57, [5.28, 1.2, 0.3], [5.28, 3.8, 0.3], 0.05);
-  for (const dz of [0, 0.35]) {
-    solid(new THREE.CylinderGeometry(0.15, 0.15, 1.3, 8), dz ? 0x3a7d52 : 0xdfe3dc, 5.55, 0.71, -2.0 - dz);
-    box(0x5a5c57, 5.55, 1.42, -2.0 - dz, 0.1, 0.14, 0.1);
-  }
-  box(0x5a5c57, 5.42, 0.9, -2.17, 0.05, 0.05, 0.7);
-  stain(R, 1.6, 1.1, 0.6, 0.3);
-  stain(R, -0.6, 0.95, 1.2, 0.2, 0xd8d0bc);
-  stain(R, 0, 3.7, 0.7, 0.18, 0xdcd4c0);
-
-  // ---------- Back (-z): service door, windows, wall AC units, bins ----------
-  const B = face(kit, 0, -3.4, Math.PI);
-  for (const x of [-3.8, -1.4, 1.0]) detailedWindow(B, -x, 2.2, 1.0, 1.4, { louvers: LOUVER });
-  door(B, -3.5, 0.5, 1.0, 2.3, { leaf: 0x687a72, frame: TRIM, trim: 0x5b6c65 });
-  box(0xc9c4b5, 3.5, 0.25, -3.75, 1.6, 0.5, 0.5);
-  for (const x of [-1.4, 1.0]) {
-    B.put(0x9a9c95, -x, 3.08, 0.3, 0.9, 0.06, 0.5);
-    B.put(0xd8dad6, -x, 3.35, 0.28, 0.8, 0.45, 0.36);
-    for (let d = -0.3; d <= 0.3; d += 0.15) B.put(0x9fa6a3, -x + d, 3.25, 0.47, 0.04, 0.2, 0.02);
-  }
-  for (const x of [4.6, 5.25]) {
-    box(0x4b6b4b, x, 0.45, -3.75, 0.55, 0.8, 0.45);
-    box(0x3c573c, x, 0.88, -3.75, 0.6, 0.06, 0.5);
-  }
-  downspout(B, 4.8, 4.0);
-  downspout(B, -4.8, 4.0);
-  stain(B, 1.4, 1.1, 0.7, 0.3);
-
-  // ---------- Left (-x) ----------
-  const L = face(kit, -5.2, -0.85, -Math.PI / 2);
-  for (const lat of [-1.4, 1.2]) detailedWindow(L, lat, 2.2, 0.9, 1.4, { louvers: LOUVER, shutter: SHUTTER });
-  wallLamp(L, -0.1, 2.8);
-  stain(L, 0, 1.0, 1.3, 0.25);
+  bench(kit, -1.23, 2.63, 0.13, 1.65, -Math.PI / 2, 0xd7d8bd, 0x9b9f86);
+  bench(kit, 2.0, 2.0, 0.13, 1.65, 0, 0xa9692f, 0x6a654a);
+  solid(new THREE.CylinderGeometry(0.27, 0.24, 0.81, 12), 0x596453, -0.25, 0.53, 2.15);
+  solid(new THREE.CylinderGeometry(0.29, 0.29, 0.07, 12), 0x424e42, -0.25, 0.97, 2.15);
+  wallLamp(entry, 1.15, 2.58);
+  wallLamp(front, 1.06, 2.65);
 }

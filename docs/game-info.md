@@ -100,7 +100,7 @@ Dimensions are in tiles (W×L) along the orthogonal grid axes. Buildings marked
 
 | Building | Tiles | Notes |
 | --- | --- | --- |
-| Clinic | 2×3 | Basic healthcare facility. |
+| Clinic | 2×3 | Basic healthcare facility; stepped flat-roofed yellow-plaster wings, red plinth and recessed entrance. |
 | Marketplace | 3×3 | Distributes food from farms, ranches and wharves. |
 | Church | 3×4 | Basic religious service. |
 | High School | 3×4 | Educates workers to high school level. |
