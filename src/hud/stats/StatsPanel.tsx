@@ -33,7 +33,14 @@ const StatsPanel: React.FC = () => {
         </div>
       </div>
       <div className="island-stats__readouts">
-        {readouts.map((item) => (
+        {readouts.map((item) => item.label === "Population" ? (
+          <button type="button" className="island-stats__readout island-stats__readout--button" key={item.label}
+            title="Inspect citizens" aria-label={`Inspect citizens (population: ${item.value})`}
+            disabled={state.population === 0} onClick={() => game.inspectCitizen(state.citizenIds[0])}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </button>
+        ) : (
           <div className="island-stats__readout" key={item.label} title={`${item.label}: ${item.value}`} aria-label={`${item.label}: ${item.value}`}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>

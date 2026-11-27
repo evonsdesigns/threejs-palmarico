@@ -20,6 +20,9 @@
 .building-details label { display: grid; gap: 4px; margin-top: 8px; }
 .building-details select { width: 100%; padding: 4px; color: #f0dfb6; background: #342c28; border: 1px solid #ad9c78; }
 .building-details button:focus-visible, .building-details select:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+.building-details.citizen-details { right: 16px; bottom: calc(var(--hud-stats-width) + 120px); width: min(230px, calc(50vw - 24px)); max-height: calc(100vh - var(--hud-stats-width) - 136px); overflow-y: auto; }
+.citizen-details__navigation { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; margin: 8px 0; }
+.citizen-details button:disabled { opacity: .5; cursor: default; }
 
 @media (min-width: 1200px) {
   .building-details { right: 248px; }

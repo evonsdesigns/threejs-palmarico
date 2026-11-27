@@ -6,12 +6,12 @@ export type EdictEvent = "bribe" | "arrest" | "capture" | "heretic" | "eliminate
 export type EdictId = "bribe" | "arrest" | "capture" | "heretic" | "eliminate" | "praise-us" | "praise-ussr" | "trade-us" | "trade-ussr" | "us-aid" | "ussr-aid" | "us-alliance" | "ussr-alliance" | "industry-ad-campaign" | "air-pollution-standards" | "tourism-ad-campaign" | "headliner" | "spring-break-package" | "tax-cut" | "special-building-permit" | "pan-caribbean-games" | "mardi-gras" | "world-geographic-package" | "amnesty" | "early-elections" | "inquisition" | "book-bbq" | "military-modernization" | "martial-law" | "open-jails" | "papal-visit" | "conscription" | "prohibition" | "literacy-program" | "contraception-ban" | "social-security" | "anti-litter-ordinance" | "sensitivity-training" | "food-for-the-people";
 export type EdictSnapshot = Pick<GameSnapshot,
   "placed" | "population" | "money" | "buildingStaffing" | "factions" | "superpowers" | "month" | "year" |
-  "activeEdicts" | "edictCooldowns" | "issuedOnce" | "jailCapacity" | "jailUsed" | "gameOver" | "rebels"
+  "activeEdicts" | "edictCooldowns" | "issuedOnce" | "jailCapacity" | "jailUsed" | "gameOver" | "rebels" | "prisoners" | "citizenOrders"
 >;
 export type MissingRequirement = (type: BuildingType, state: Pick<GameSnapshot, "placed">) => string | null;
 
 export interface EdictDefinition {
-  id: string;
+  id: EdictId;
   name: string;
   category: EdictCategory;
   description: string;
@@ -33,20 +33,40 @@ export interface EdictDefinition {
 
 const requiredAnyHotel: BuildingType[] = ["hotel", "luxury-hotel", "cheap-motel", "beach-villa", "bungalow"];
 const factories: BuildingType[] = ["jewelry-factory", "furniture-factory", "cigar-factory", "rum-distillery", "lumber-mill", "cannery"];
-const freeCellRequirement = (state: EdictSnapshot) => state.jailCapacity - state.jailUsed >= 1 ? null : "Requires an available prison or fort cell";
-const prisonCellRequirement = (state: EdictSnapshot) => {
-  const capacity = state.placed.reduce((sum, building, index) => building.type === "prison" ? sum + 8 * state.buildingStaffing[index] : sum, 0);
-  return capacity - state.jailUsed >= 1 ? null : "Requires a prison with a free cell";
-};
+export function detentionSite(state: EdictSnapshot, action: "arrest" | "capture"): number | null {
+  const index = state.placed.findIndex((building, buildingIndex) => {
+    if (building.type !== (action === "arrest" ? "prison" : "colonial-fort")) return false;
+    const capacity = building.type === "prison" ? Math.floor(8 * state.buildingStaffing[buildingIndex]) : 4;
+    const used = state.prisoners.filter((prisoner) => prisoner.buildingIndex === buildingIndex).length
+      + state.citizenOrders.filter((order) => order.destination === buildingIndex).length;
+    return capacity > used;
+  });
+  return index < 0 ? null : index;
+}
+export function citizenOrderSource(state: EdictSnapshot, action: "arrest" | "capture" | "eliminate"): number | null {
+  const type = action === "eliminate" ? "guard-station" : "police-station";
+  let source: number | null = null;
+  let queued = Infinity;
+  state.placed.forEach((building, index) => {
+    if (building.type !== type || !(state.buildingStaffing[index] > 0)) return;
+    const count = state.citizenOrders.filter((order) => order.source === index).length;
+    if (count < queued) {
+      source = index;
+      queued = count;
+    }
+  });
+  return source;
+}
+const prisonCellRequirement = (state: EdictSnapshot) => detentionSite(state, "arrest") === null ? "Requires a prison with a free cell" : null;
 const staffedRequirement = (types: BuildingType[], reason: string) => (state: EdictSnapshot) => state.placed.some((building, index) => types.includes(building.type) && state.buildingStaffing[index] > 0) ? null : reason;
 const powerRequirement = (id: "us" | "ussr", label: RelationLabel) => (state: EdictSnapshot) => atLeast(state.superpowers[id], label) ? null : `Requires ${label} or better ${id === "us" ? "U.S." : "U.S.S.R."} relations`;
 
 export const edictDefinitions: EdictDefinition[] = [
-  { id: "bribe", name: "Bribe", category: "people", cost: () => 1000, description: "Raises a target's respect and wealth for three years.", requiredBuildings: ["bank"], requirement: staffedRequirement(["bank"], "Requires a staffed Bank and banker."), durationMonths: 36, event: "bribe", modifiers: { factionAdjustments: { loyalists: 5 } } },
-  { id: "arrest", name: "Arrest", category: "people", cost: () => 500, description: "Jails one target for an estimated 5–8 years; consumes a prison cell.", requiredBuildings: ["police-station"], requirement: (state: EdictSnapshot) => staffedRequirement(["police-station"], "Requires a staffed Police Station.")(state) ?? prisonCellRequirement(state), event: "arrest" },
-  { id: "capture", name: "Capture", category: "people", cost: () => 500, description: "Captures one target in the Colonial Fort dungeon for an estimated 5–8 years.", requiredBuildings: ["colonial-fort"], requirement: (state: EdictSnapshot) => state.placed.some((building) => building.type === "colonial-fort") ? freeCellRequirement(state) : "Requires the Colonial Fort and a free dungeon cell", event: "capture" },
-  { id: "heretic", name: "Heretic", category: "people", cost: () => 500, description: "Tags a target as a heretic; their family loses respect.", requiredBuildings: ["cathedral"], requirement: staffedRequirement(["cathedral"], "Requires a staffed Cathedral and bishop."), event: "heretic" },
-  { id: "eliminate", name: "Eliminate", category: "people", cost: () => 500, description: "Removes one target; their family loses respect and unrest may rise.", requirement: staffedRequirement(["armory", "guard-station", "army-base"], "Requires a staffed soldier in an Armory, Guard Station, or Army Base."), event: "eliminate" },
+  { id: "bribe", name: "Bribe", category: "people", cost: () => 1000, description: "Raises a target's respect and wealth; the benefit declines over three years.", requiredBuildings: ["bank"], requirement: staffedRequirement(["bank"], "Requires a staffed Bank and banker."), durationMonths: 36, event: "bribe" },
+  { id: "arrest", name: "Arrest", category: "people", cost: () => 500, description: "Dispatches police to arrest the target. A seven-year prison term starts when the officer reaches them.", requiredBuildings: ["police-station"], requirement: (state: EdictSnapshot) => staffedRequirement(["police-station"], "Requires a staffed Police Station.")(state) ?? prisonCellRequirement(state), event: "arrest" },
+  { id: "capture", name: "Capture", category: "people", cost: () => 500, description: "Dispatches police to capture the target for a three-year Colonial Fort dungeon term.", requiredBuildings: ["colonial-fort", "police-station"], requirement: (state: EdictSnapshot) => staffedRequirement(["police-station"], "Requires a staffed Police Station.")(state) ?? (detentionSite(state, "capture") === null ? "Requires the Colonial Fort and a free dungeon cell" : null), event: "capture" },
+  { id: "heretic", name: "Heretic", category: "people", cost: () => 500, description: "Permanently marks the selected citizen as a heretic, reducing personal respect and excluding rebel recruitment.", requiredBuildings: ["cathedral"], requirement: staffedRequirement(["cathedral"], "Requires a staffed Cathedral and bishop."), event: "heretic" },
+  { id: "eliminate", name: "Eliminate", category: "people", cost: () => 500, description: "Dispatches a soldier from a staffed guard tower. The target is removed only when the soldier reaches them.", requiredBuildings: ["guard-station"], requirement: staffedRequirement(["guard-station"], "Requires a staffed Guard Station (guard tower)."), event: "eliminate" },
 
   { id: "praise-us", name: "Praise U.S.", category: "foreign", cost: () => 500, description: "Raises U.S. relations and lowers U.S.S.R. relations by a smaller amount.", requirement: staffedRequirement(["diplomatic-ministry"], "Requires a staffed Diplomatic Ministry."), cooldownMonths: 36, cooldownKey: "praise", event: "praise-us" },
   { id: "praise-ussr", name: "Praise Russia", category: "foreign", cost: () => 500, description: "Raises U.S.S.R. relations and lowers U.S. relations by a smaller amount.", requirement: staffedRequirement(["diplomatic-ministry"], "Requires a staffed Diplomatic Ministry."), cooldownMonths: 36, cooldownKey: "praise", event: "praise-ussr" },
@@ -116,10 +136,13 @@ export function edictRequirement(id: EdictId, state: EdictSnapshot, missingRequi
   return edict.requirement?.(state) ?? null;
 }
 
-export function edictUnavailableReason(id: EdictId, state: EdictSnapshot, missingRequirement: MissingRequirement): string | null {
+export function edictUnavailableReason(id: EdictId, state: EdictSnapshot, missingRequirement: MissingRequirement, citizenId?: number): string | null {
   const edict = edictDefinitions.find((entry) => entry.id === id)!;
+  if ((id === "arrest" || id === "capture" || id === "eliminate") && citizenId !== undefined && state.citizenOrders.some((order) => order.citizenId === citizenId)) return "A security order is already pending for this citizen";
+  if ((id === "arrest" || id === "capture") && citizenId !== undefined && state.prisoners.some((entry) => entry.citizenId === citizenId)) return "This citizen is already detained";
   if (edict.once && state.issuedOnce[id]) return "This edict can only be issued once";
-  const isActive = state.activeEdicts.some((active) => active.id === id);
+  const isActive = state.activeEdicts.some((active) => active.id === id
+    && (edict.category !== "people" || (citizenId !== undefined && active.citizenId === citizenId)));
   if (isActive && !edict.toggle) return "This edict is already active";
   if (edict.cooldownMonths) {
     const cooldown = state.edictCooldowns[edict.cooldownKey ?? id] ?? 0;

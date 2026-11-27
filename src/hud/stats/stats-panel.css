@@ -144,6 +144,10 @@
   font: bold 11px/1.35 Georgia, serif;
 }
 
+.island-stats__readout--button { color: inherit; cursor: pointer; }
+.island-stats__readout--button:focus-visible { outline: 2px solid white; outline-offset: 1px; }
+.island-stats__readout--button:disabled { cursor: default; opacity: .5; }
+
 .island-stats__footer {
   display: flex;
   align-items: center;

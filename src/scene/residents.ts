@@ -1,6 +1,7 @@
 import * as THREE from "three";
-import { buildings, GameSnapshot, planResidents, ResidentPlan } from "../logic/game";
-import { findWalkPathFromStarts, footprintIntersectsCircle, GRID_TILE_SIZE, GridFootprint, GridTile, residentStep, WalkBounds, walkSegmentClear, walkSegmentClearOfBounds } from "../logic/grid";
+import { buildings, type GameSnapshot, planCitizens, type ResidentPlan } from "../logic/game";
+import { citizenOrderBlock, type CitizenOrderEvent, type CitizenOrderStatus } from "../logic/citizens";
+import { findWalkPathFromStarts, footprintIntersectsCircle, GRID_TILE_SIZE, type GridFootprint, type GridTile, residentStep, type WalkBounds, walkSegmentClear, walkSegmentClearOfBounds } from "../logic/grid";
 
 const WALK_TILE_SIZE = 2;
 const RESIDENT_CLEARANCE = 0.6;
@@ -20,12 +21,34 @@ interface Resident {
   avoiding: boolean;
   retreating: boolean;
   inside: number | null;
+  detained: boolean;
+  tag: THREE.Mesh;
 }
 
 export class Residents {
+  private readonly scene: THREE.Scene;
+  private readonly heightAt: (x: number, z: number) => number | null;
+  private readonly trees: THREE.Vector2[];
+  private readonly buildingModel: (index: number) => THREE.Object3D;
   private readonly people: Resident[] = [];
   private lastPlaced: GameSnapshot["placed"] | null = null;
   private lastPopulation = -1;
+  private lastCitizenIds: number[] | null = null;
+  private lastPrisoners: GameSnapshot["prisoners"] | null = null;
+  private lastEdicts: GameSnapshot["activeEdicts"] | null = null;
+  private lastOrders: GameSnapshot["citizenOrders"] | null = null;
+  private readonly officers = new Map<number, { person: Resident; retry: number }>();
+  private inspectedCitizen: number | null = null;
+  private readonly tagGeometry = new THREE.OctahedronGeometry(0.23);
+  private readonly bribeTag = new THREE.MeshBasicMaterial({ color: 0xffd75a });
+  private readonly hereticTag = new THREE.MeshBasicMaterial({ color: 0xc98bdb });
+  private readonly orderTag = new THREE.MeshBasicMaterial({ color: 0xe59a43 });
+  private readonly policeUniform = new THREE.MeshStandardMaterial({ color: 0x315e86 });
+  private readonly soldierUniform = new THREE.MeshStandardMaterial({ color: 0x536844 });
+  private readonly selection = new THREE.Mesh(
+    new THREE.RingGeometry(0.75, 0.95, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffe399, side: THREE.DoubleSide, depthWrite: false }),
+  );
   private bounds: WalkBounds[] = [];
   private readonly terrain = new Map<string, boolean>();
   private readonly reportedUnreachable = new Set<number>();
@@ -52,14 +75,25 @@ export class Residents {
   private readonly hatBandMaterial = new THREE.MeshStandardMaterial({ color: 0x76513a });
 
   constructor(
-    private readonly scene: THREE.Scene,
-    private readonly heightAt: (x: number, z: number) => number | null,
-    private readonly trees: THREE.Vector2[],
-    private readonly buildingModel: (index: number) => THREE.Object3D,
-  ) {}
+    scene: THREE.Scene,
+    heightAt: (x: number, z: number) => number | null,
+    trees: THREE.Vector2[],
+    buildingModel: (index: number) => THREE.Object3D,
+  ) {
+    this.scene = scene;
+    this.heightAt = heightAt;
+    this.trees = trees;
+    this.buildingModel = buildingModel;
+    this.selection.rotation.x = -Math.PI / 2;
+    this.selection.visible = false;
+    this.scene.add(this.selection);
+  }
 
   sync(state: GameSnapshot) {
-    if (this.lastPlaced === state.placed && this.lastPopulation === state.population) return;
+    this.inspectedCitizen = state.inspectedCitizen;
+    this.syncSelection();
+    if (this.lastPlaced === state.placed && this.lastPopulation === state.population
+      && this.lastCitizenIds === state.citizenIds && this.lastPrisoners === state.prisoners && this.lastEdicts === state.activeEdicts && this.lastOrders === state.citizenOrders) return;
     const changedBuildings = this.lastPlaced !== state.placed;
     if (changedBuildings) {
       this.reportedUnreachable.clear();
@@ -73,24 +107,53 @@ export class Residents {
     }
     this.lastPlaced = state.placed;
     this.lastPopulation = state.population;
-    const plans = planResidents(state.placed, state.population);
-    while (this.people.length > plans.length) {
-      const person = this.people.pop()!;
-      this.scene.remove(person.model);
+    this.lastCitizenIds = state.citizenIds;
+    this.lastPrisoners = state.prisoners;
+    this.lastEdicts = state.activeEdicts;
+    this.lastOrders = state.citizenOrders;
+    for (const [id, officer] of this.officers) {
+      if (!state.citizenOrders.some((order) => order.id === id)) {
+        this.scene.remove(officer.person.model);
+        this.officers.delete(id);
+      } else if (changedBuildings) {
+        officer.person.path = null;
+        officer.retry = 0;
+      }
     }
+    const plans = planCitizens(state);
+    const living = new Set(state.citizenIds);
+    for (let index = this.people.length - 1; index >= 0; index--) {
+      if (!living.has(this.people[index].model.userData.citizenId)) {
+        this.scene.remove(this.people[index].model);
+        this.people.splice(index, 1);
+      }
+    }
+    const existing = new Map(this.people.map((person) => [person.model.userData.citizenId, person]));
     plans.forEach((plan, index) => {
-      let person = this.people[index];
+      const citizenId = state.citizenIds[index];
+      let person = existing.get(citizenId);
       if (!person) {
-        person = this.createPerson(index, plan);
-        this.people.push(person);
+        person = this.createPerson(citizenId - 1, plan);
         this.scene.add(person.model);
       }
-      if (plan.home === null) person.inside = null;
-      if (!person.model.visible && person.inside === null && plan.home !== null) {
+      this.people[index] = person;
+      person.model.userData.citizenId = citizenId;
+      const prisoner = state.prisoners.find((entry) => entry.citizenId === citizenId);
+      person.detained = Boolean(prisoner);
+      if (plan.home === null || prisoner) person.inside = null;
+      if (prisoner) {
+        const building = state.placed[prisoner.buildingIndex];
+        person.model.position.set(building.x, this.ground(building.x, building.z), building.z);
+      } else if (!person.model.visible && person.inside === null && plan.home !== null) {
         const point = this.spawnPoint(state, plan.home);
         person.model.position.set(point.x, this.ground(point.x, point.z), point.z);
       }
-      person.model.visible = plan.home !== null && person.inside === null;
+      person.model.visible = !prisoner && plan.home !== null && person.inside === null;
+      const effects = state.activeEdicts.filter((entry) => entry.citizenId === citizenId);
+      const heretic = effects.some((entry) => entry.id === "heretic");
+      const ordered = state.citizenOrders.some((order) => order.citizenId === citizenId);
+      person.tag.visible = ordered || heretic || effects.some((entry) => entry.id === "bribe");
+      person.tag.material = ordered ? this.orderTag : heretic ? this.hereticTag : this.bribeTag;
       person.plan = plan;
       person.hat.visible = plan.work !== null && state.placed[plan.work].type === "farm";
       person.path = null;
@@ -99,11 +162,46 @@ export class Residents {
       person.blockedTime = 0;
       if (changedBuildings) person.unreachable.clear();
     });
+    this.syncSelection();
+  }
+
+  positionOf(citizenId: number): THREE.Vector3 | null {
+    const person = this.people.find((entry) => entry.model.userData.citizenId === citizenId);
+    if (!person || (person.plan.home === null && !person.detained)) return null;
+    return person.inside === null ? person.model.position.clone()
+      : this.buildingModel(person.inside).getWorldPosition(new THREE.Vector3());
+  }
+
+  private syncSelection() {
+    const person = this.people.find((entry) => entry.model.userData.citizenId === this.inspectedCitizen);
+    this.selection.visible = Boolean(person?.model.visible);
+    if (person) {
+      this.selection.position.copy(person.model.position);
+      this.selection.position.y += 0.08;
+    }
   }
 
   blocksFootprint(footprint: GridFootprint) {
-    return this.people.some((person) => person.model.visible
+    return [...this.people, ...Array.from(this.officers.values(), (officer) => officer.person)].some((person) => person.model.visible
       && footprintIntersectsCircle(footprint, person.model.position.x, person.model.position.z, 0.86));
+  }
+
+  pick(raycaster: THREE.Raycaster): { citizenId: number; distance: number } | null {
+    const models = this.people.filter((person) => person.model.visible).map((person) => person.model);
+    models.forEach((model) => model.updateWorldMatrix(true, true));
+    const hit = raycaster.intersectObjects(models, true).find((intersection) => {
+      let object: THREE.Object3D | null = intersection.object;
+      while (object) {
+        if (!object.visible) return false;
+        object = object.parent;
+      }
+      return true;
+    });
+    if (!hit) return null;
+    let object: THREE.Object3D | null = hit.object;
+    while (object && object.userData.citizenId === undefined) object = object.parent;
+    if (!object) throw new Error("Picked resident has no citizen identity.");
+    return { citizenId: object.userData.citizenId, distance: hit.distance };
   }
 
   /** How many residents are currently inside each building, keyed by building index. */
@@ -116,7 +214,12 @@ export class Residents {
   }
 
   update(delta: number, state: GameSnapshot) {
+    if (delta <= 0 || state.paused || state.gameOver) {
+      this.syncSelection();
+      return [];
+    }
     this.people.forEach((person) => {
+      if (person.detained) return;
       const { home, work, service } = person.plan;
       if (home === null) return;
       const route = [home, work ?? home, home, service ?? home];
@@ -228,12 +331,8 @@ export class Residents {
       const desiredTravel = Math.min(distance, person.speed * delta);
       let travel = 0;
       if (distance > 0.001) {
-        const position = person.model.position;
         const others = this.people.filter((other) => other !== person && other.model.visible).map((other) => other.model.position);
-        const next = residentStep(position, target, desiredTravel, others, (start, end) => this.clear(start, end));
-        const moveX = next.x - position.x;
-        const moveZ = next.z - position.z;
-        travel = Math.hypot(moveX, moveZ);
+        travel = this.movePerson(person, target, delta, others);
         if (travel < desiredTravel * 0.1) {
           person.blockedTime += delta;
           if (person.blockedTime >= 0.7) {
@@ -245,14 +344,6 @@ export class Residents {
         } else {
           person.blockedTime = 0;
         }
-        person.model.position.x = next.x;
-        person.model.position.z = next.z;
-        person.model.position.y = this.ground(person.model.position.x, person.model.position.z);
-        if (travel > 0.001) person.model.rotation.y = Math.atan2(moveX, moveZ);
-        person.stride += travel * 3;
-        person.limbs.forEach((limb, i) => {
-          limb.rotation.x = Math.sin(person.stride) * (i % 2 ? -0.5 : 0.5) * (i >= 2 ? -1 : 1);
-        });
       }
       if (person.path && Math.hypot(target.x - person.model.position.x, target.z - person.model.position.z) <= 0.001) {
         person.path.shift();
@@ -279,6 +370,102 @@ export class Residents {
         }
       }
     });
+    const events = this.updateOrders(delta, state);
+    this.syncSelection();
+    return events;
+  }
+
+  private movePerson(person: Resident, target: GridTile, delta: number, others: GridTile[]) {
+    const position = person.model.position;
+    const desired = Math.min(Math.hypot(target.x - position.x, target.z - position.z), person.speed * delta);
+    const next = residentStep(position, target, desired, others, (start, end) => this.clear(start, end));
+    const dx = next.x - position.x;
+    const dz = next.z - position.z;
+    const travel = Math.hypot(dx, dz);
+    position.set(next.x, this.ground(next.x, next.z), next.z);
+    if (travel > 0.001) person.model.rotation.y = Math.atan2(dx, dz);
+    person.stride += travel * 3;
+    person.limbs.forEach((limb, i) => {
+      limb.rotation.x = Math.sin(person.stride) * (i % 2 ? -0.5 : 0.5) * (i >= 2 ? -1 : 1);
+    });
+    return travel;
+  }
+
+  private updateOrders(delta: number, state: GameSnapshot): CitizenOrderEvent[] {
+    const events: CitizenOrderEvent[] = [];
+    if (delta <= 0 || state.paused || state.gameOver) return events;
+    const busy = new Set<number>();
+    for (const order of state.citizenOrders) {
+      const status = (value: CitizenOrderStatus) => {
+        if (order.status !== value) events.push({ type: "status", orderId: order.id, status: value });
+      };
+      if (busy.has(order.source)) { status("queued"); continue; }
+      busy.add(order.source);
+      const blocked = citizenOrderBlock(state, order);
+      if (blocked) { status(blocked); continue; }
+      const target = this.people.find((person) => person.model.userData.citizenId === order.citizenId);
+      if (!target) throw new Error("A security order targets a missing resident.");
+      const prisoner = state.prisoners.find((entry) => entry.citizenId === order.citizenId);
+      if (target.plan.home === null && !prisoner) { status("waiting-for-target"); continue; }
+      let officer = this.officers.get(order.id);
+      if (!officer) {
+        const point = this.findSpawnPoint(state, order.source, 32);
+        if (!point) { status("blocked"); continue; }
+        const person = this.createPerson(order.id, target.plan, order.action === "eliminate" ? this.soldierUniform : this.policeUniform);
+        person.model.userData.citizenOrderId = order.id;
+        person.model.position.set(point.x, this.ground(point.x, point.z), point.z);
+        person.model.visible = true;
+        person.hat.visible = true;
+        person.speed = 4;
+        officer = { person, retry: 0 };
+        this.officers.set(order.id, officer);
+        this.scene.add(person.model);
+      }
+      const person = officer.person;
+      person.limbs.forEach((limb) => { limb.rotation.x = 0; });
+      const goal = prisoner ? this.findSpawnPoint(state, prisoner.buildingIndex, 32) : target.model.position;
+      if (!goal) { status("blocked"); continue; }
+      const distance = Math.hypot(goal.x - person.model.position.x, goal.z - person.model.position.z);
+      if (distance <= 1.6 && this.clear(person.model.position, goal)) {
+        if (target.model.visible || prisoner) events.push({ type: "arrived", orderId: order.id });
+        else status("waiting-for-target");
+        continue;
+      }
+      officer.retry -= delta;
+      if (officer.retry <= 0) {
+        officer.retry = 1;
+        const tile = this.tileAt(person.model.position.x, person.model.position.z);
+        const destination = this.tileAt(goal.x, goal.z);
+        const starts: GridTile[] = [];
+        const goals: GridTile[] = [];
+        for (let x = -2; x <= 2; x++) {
+          for (let z = -2; z <= 2; z++) {
+            const start = { x: tile.x + x, z: tile.z + z };
+            if (this.walkable(start) && this.clear(person.model.position, this.center(start))) starts.push(start);
+          }
+          for (let x = -1; x <= 1; x++) {
+            for (let z = -1; z <= 1; z++) {
+              const end = { x: destination.x + x, z: destination.z + z };
+              if (this.walkable(end) && this.clear(this.center(end), goal)) goals.push(end);
+            }
+          }
+        }
+        starts.sort((a, b) => Math.hypot(a.x - tile.x, a.z - tile.z) - Math.hypot(b.x - tile.x, b.z - tile.z));
+        person.path = this.clear(person.model.position, goal) ? []
+          : findWalkPathFromStarts(starts, goals, (point) => this.walkable(point), (a, b) => this.clear(this.center(a), this.center(b)));
+        if (person.path) person.path = this.shortenPath(person.model.position, person.path, (a, b) => this.clear(a, b));
+      }
+      if (person.path === null) { status("blocked"); continue; }
+      const waypoint = person.path.length ? this.center(person.path[0]) : goal;
+      const others = [...this.people.filter((entry) => entry !== target && entry.model.visible),
+        ...Array.from(this.officers.values(), (entry) => entry.person).filter((entry) => entry !== person)]
+        .map((entry) => entry.model.position);
+      const travel = this.movePerson(person, waypoint, delta, others);
+      person.blockedTime = travel < 0.001 ? person.blockedTime + delta : 0;
+      if (person.path.length && Math.hypot(waypoint.x - person.model.position.x, waypoint.z - person.model.position.z) < 0.01) person.path.shift();
+      status(person.blockedTime > 2 ? "blocked" : "en-route");
+    }
+    return events;
   }
 
   private exitBuilding(person: Resident, state: GameSnapshot) {
@@ -358,6 +545,12 @@ export class Residents {
   }
 
   private spawnPoint(state: GameSnapshot, index: number) {
+    const point = this.findSpawnPoint(state, index, 512);
+    if (!point) throw new Error("Unable to find open land for a resident.");
+    return point;
+  }
+
+  private findSpawnPoint(state: GameSnapshot, index: number, maxRing: number) {
     const building = state.placed[index];
     const origin = this.tileAt(building.x, building.z);
     const occupied = new Set(this.people.filter((person) => person.model.visible)
@@ -365,7 +558,7 @@ export class Residents {
         const tile = this.tileAt(person.model.position.x, person.model.position.z);
         return `${tile.x},${tile.z}`;
       }));
-    for (let ring = 1; ring <= 512; ring++) {
+    for (let ring = 1; ring <= maxRing; ring++) {
       const candidates: GridTile[] = [];
       for (let x = -ring; x <= ring; x++) {
         for (let z = -ring; z <= ring; z++) {
@@ -381,14 +574,19 @@ export class Residents {
         return this.center(candidates[0]);
       }
     }
-    throw new Error("Unable to find open land for a resident.");
+    return null;
   }
 
-  private createPerson(index: number, plan: ResidentPlan): Resident {
+  private createPerson(index: number, plan: ResidentPlan, uniform?: THREE.Material): Resident {
     const model = new THREE.Group();
+    const tag = new THREE.Mesh(this.tagGeometry, this.bribeTag);
+    tag.position.y = 2.6;
+    tag.visible = false;
+    model.add(tag);
     model.visible = false;
     model.scale.setScalar(1.3);
-    const torso = new THREE.Mesh(this.torso, this.clothes[index % this.clothes.length]);
+    const clothing = uniform ?? this.clothes[index % this.clothes.length];
+    const torso = new THREE.Mesh(this.torso, clothing);
     torso.position.y = 1.05;
     torso.scale.z = 0.7;
     model.add(torso);
@@ -414,15 +612,15 @@ export class Residents {
     model.add(hair);
     const hat = new THREE.Group();
     hat.position.y = 1.78;
-    const brim = new THREE.Mesh(this.hatBrim, this.straw);
-    const crown = new THREE.Mesh(this.hatCrown, this.straw);
+    const brim = new THREE.Mesh(this.hatBrim, uniform ?? this.straw);
+    const crown = new THREE.Mesh(this.hatCrown, uniform ?? this.straw);
     crown.position.y = 0.12;
     const band = new THREE.Mesh(this.hatBand, this.hatBandMaterial);
     band.position.y = 0.055;
     hat.add(brim, crown, band);
     model.add(hat);
     if (index % 3 === 1) {
-      const skirt = new THREE.Mesh(this.skirt, this.clothes[index % this.clothes.length]);
+      const skirt = new THREE.Mesh(this.skirt, clothing);
       skirt.position.y = 0.62;
       skirt.scale.z = 0.8;
       model.add(skirt);
@@ -436,7 +634,7 @@ export class Residents {
       mesh.position.y = arm ? -0.26 : -0.29;
       pivot.add(mesh);
       if (arm) {
-        const sleeve = new THREE.Mesh(this.sleeve, this.clothes[index % this.clothes.length]);
+        const sleeve = new THREE.Mesh(this.sleeve, clothing);
         sleeve.position.y = -0.09;
         pivot.add(sleeve);
       }
@@ -448,6 +646,6 @@ export class Residents {
       limbs.push(pivot);
     }
     return { model, limbs, plan, step: index % 4, wait: Math.random(), stride: index, path: null, unreachable: new Set(), hat,
-      speed: 2.6 + Math.random() * 0.8, blockedTime: 0, avoiding: false, retreating: false, inside: null };
+      speed: 2.6 + Math.random() * 0.8, blockedTime: 0, avoiding: false, retreating: false, inside: null, detained: false, tag };
   }
 }

@@ -1,8 +1,9 @@
 import { footprintAt, rotatedTiles, type GridFootprint, type Rotation } from "./grid";
 import { buildingEffects, type Good } from "./building-effects";
 import { calculateIsland, defaultIslandModifiers, type FactionStateMap, type IslandModifiers, type IslandRatings } from "./island";
-import { combineEdictModifiers, currentMonthIndex, edictDefinitions, edictCost, edictUnavailableReason, type EdictId } from "./edicts";
+import { combineEdictModifiers, currentMonthIndex, citizenOrderSource, detentionSite, edictDefinitions, edictCost, edictUnavailableReason, type EdictId } from "./edicts";
 import { calculatePower, type PowerSummary } from "./power";
+import { citizenStatus, citizenOrderBlock, citizenOrderStatusLabels, type CitizenOrder, type CitizenOrderStatus, type Prisoner } from "./citizens";
 
 export type BuildingType = "palace" | "shack" | "house" | "farm" | "market" | "clinic"
   | "apartment" | "condominium" | "luxury-house" | "bunkhouse" | "country-house"
@@ -113,7 +114,7 @@ export const buildings: BuildingDefinition[] = [
   { id: "electric-substation", name: "Electric Substation", icon: "⚡", cost: 2000, upkeep: 20, jobs: 0, housing: 0, food: 0, revenue: 0, tiles: [1, 1], description: "Extends a connected power grid by 10 tiles. Chain substations to reach distant buildings. Needs no staff." },
   { id: "construction-office", name: "Construction Office", icon: "⚡", cost: 1000, upkeep: 40, jobs: 8, housing: 0, food: 0, revenue: 0, tiles: [3, 2], description: "Eight laborers build the island's projects; each staffed office cuts building costs 5% (up to 15%)." },
   { id: "bank", name: "Bank", icon: "⚡", cost: 8000, upkeep: 120, jobs: 5, housing: 0, food: 0, revenue: 0, tiles: [3, 3], description: "Five college bankers earn interest on the treasury and enable the Bribe and Special Building Permit edicts." },
-  { id: "electric-power-plant", name: "Electric Power Plant", icon: "⚡", cost: 17000, upkeep: 300, jobs: 6, housing: 0, food: 0, revenue: 0, tiles: [5, 4], description: "Six college engineers generate electricity for buildings within 24 tiles. Pollutes." },
+  { id: "electric-power-plant", name: "Electric Power Plant", icon: "⚡", cost: 17000, upkeep: 300, jobs: 6, housing: 0, food: 0, revenue: 0, tiles: [5, 4], description: "Six college engineers generate up to 100 MW within 24 tiles. Output falls with staffing. Connected plants share power. Pollutes." },
   { id: "dock", name: "Dock", icon: "⚡", cost: 2000, upkeep: 60, jobs: 4, housing: 0, food: 0, revenue: 0, tiles: [6, 4], description: "Four dockworkers load exports (+10% raw export income) and land tourists and immigrants. Must be built on the shore.", coastal: true },
   { id: "airport", name: "Airport", icon: "⚡", cost: 16000, upkeep: 250, jobs: 2, housing: 0, food: 0, revenue: 0, tiles: [12, 6], description: "Two college engineers run flights that bring many tourists and some immigrants." },
   { id: "guard-station", name: "Guard Station", icon: "★", cost: 1500, upkeep: 45, jobs: 3, housing: 0, food: 0, revenue: 0, tiles: [2, 2], description: "Three high-school soldiers guard the island against rebels." },
@@ -193,7 +194,7 @@ export interface ResidentPlan {
   service: number | null;
 }
 
-export function planResidents(placed: PlacedBuilding[], population: number): ResidentPlan[] {
+export function planResidents(placed: PlacedBuilding[], population: number, unavailable: ReadonlySet<number> = new Set()): ResidentPlan[] {
   const defs = placed.map((building) => buildings.find((item) => item.id === building.type)!);
   const homes: number[] = [];
   const jobs: number[] = [];
@@ -208,6 +209,7 @@ export function planResidents(placed: PlacedBuilding[], population: number): Res
     if (building.type === "shack") addSlots(homes, index, defs[index].housing);
   });
   const fallback = placed.findIndex((building) => building.type === "palace");
+  let worker = 0;
   return Array.from({ length: population }, (_, resident) => {
     const services = placed.flatMap((building, index) => {
       if (building.type === "clinic" || building.type === "market" || building.type === "restaurant" || building.type === "hospital" || building.type === "church" || building.type === "cathedral" || building.type === "gourmet-restaurant" || building.type === "cabaret" || building.type === "movie-theater" || building.type === "nightclub" || building.type === "casino" || building.type === "conservatory" || building.type === "sports-complex" || building.type === "duty-free-shop" || building.type === "souvenir-shop") return [index];
@@ -216,7 +218,7 @@ export function planResidents(placed: PlacedBuilding[], population: number): Res
     });
     return {
       home: homes[resident] ?? (fallback === -1 ? null : fallback),
-      work: jobs[resident] ?? null,
+      work: unavailable.has(resident) ? null : jobs[worker++] ?? null,
       service: services.length ? services[resident % services.length] : null,
     };
   });
@@ -225,6 +227,7 @@ export function planResidents(placed: PlacedBuilding[], population: number): Res
 export interface ActiveEdict {
   id: EdictId;
   expiresAt: number | null;
+  citizenId?: number;
 }
 
 export interface GameSnapshot {
@@ -237,6 +240,10 @@ export interface GameSnapshot {
   speed: GameSpeed;
   selected: BuildingType | null;
   inspectedBuilding: number | null;
+  inspectedCitizen: number | null;
+  targetingEdict: EdictId | null;
+  citizenIds: number[];
+  lastCitizenEdict: { id: EdictId; citizenId: number } | null;
   farmCrop: FarmCrop;
   pubDressCode: PubDressCode;
   restaurantTableSetting: RestaurantTableSetting;
@@ -281,6 +288,8 @@ export interface GameSnapshot {
   issuedOnce: Partial<Record<EdictId, true>>;
   jailUsed: number;
   jailReleases: number[];
+  prisoners: Prisoner[];
+  citizenOrders: CitizenOrder[];
   placementRotation: Rotation;
   notice: string;
 }
@@ -300,15 +309,22 @@ export function buildingProducedGood(building: PlacedBuilding): Good | undefined
   return building.type === "mine" ? building.mineResource ?? "gold" : buildingEffects[building.type].produces;
 }
 
-function calculate(placed: PlacedBuilding[], population: number, educated = { highSchool: 0, college: 0 }, modifiers: IslandModifiers = defaultIslandModifiers, money = 0, superpowers = { us: 50, ussr: 50 }, powerMonth = 1950 * 12) {
+export function planCitizens(state: Pick<GameSnapshot, "placed" | "population" | "citizenIds" | "prisoners">): ResidentPlan[] {
+  const detained = new Set(state.prisoners.map((prisoner) => prisoner.citizenId));
+  const unavailable = new Set(state.citizenIds.flatMap((id, index) => detained.has(id) ? [index] : []));
+  return planResidents(state.placed, state.population, unavailable);
+}
+
+function calculate(placed: PlacedBuilding[], population: number, educated = { highSchool: 0, college: 0 }, modifiers: IslandModifiers = defaultIslandModifiers, money = 0, superpowers = { us: 50, ussr: 50 }, powerMonth = 1950 * 12, workforce = population) {
   const defs = placed.map((building) => buildings.find((item) => item.id === building.type)!);
   const housing = defs.reduce((sum, item) => sum + item.housing, 0);
   const production = placed.map((building, index) => building.type === "farm" ? farmCropProduction[building.crop ?? "corn"] : defs[index]);
   const jobs = defs.reduce((sum, item, index) => sum + (modifiers.closedBuildingTypes.includes(placed[index].type) ? 0 : item.jobs), 0);
-  const staffing = jobs === 0 ? 0 : Math.min(1, population / jobs);
+  const staffing = jobs === 0 ? 0 : Math.min(1, workforce / jobs);
   const buildingStaffing = placed.map((building, index) => modifiers.closedBuildingTypes.includes(building.type) ? 0 : defs[index].jobs === 0 ? 1 : staffing);
-  let collegeWorkers = educated.college;
-  let highSchoolWorkers = educated.highSchool;
+  const availableShare = population === 0 ? 0 : workforce / population;
+  let collegeWorkers = educated.college * availableShare;
+  let highSchoolWorkers = educated.highSchool * availableShare;
   placed.forEach((building, index) => {
     if (modifiers.closedBuildingTypes.includes(building.type) || buildingEffects[building.type].education !== "college" || defs[index].jobs === 0) return;
     const fraction = Math.min(staffing, collegeWorkers / defs[index].jobs);
@@ -526,10 +542,13 @@ export class GameState {
   private initialized = false;
   private elapsed = 0;
   private warnedRelations = false;
+  private nextCitizenId = 9;
+  private nextCitizenOrderId = 1;
   private baseModifiers: IslandModifiers = { ...defaultIslandModifiers, superpowerAdjustments: { ...defaultIslandModifiers.superpowerAdjustments }, factionAdjustments: {}, factionShareMultipliers: {} };
   private state: GameSnapshot = {
     money: 3000, slushFund: 0, population: 8, month: 1, year: 1950, paused: false, speed: 1,
     selected: null, inspectedBuilding: null, farmCrop: "corn", pubDressCode: "none", restaurantTableSetting: "cloth", teamsterWorkMode: "normal", immigrationOption: "open", placementRotation: 0, placed: [],
+    targetingEdict: null, inspectedCitizen: null, citizenIds: Array.from({ length: 8 }, (_, index) => index + 1), lastCitizenEdict: null, prisoners: [], citizenOrders: [],
     superpowers: { us: 50, ussr: 50 }, rebels: 0, rngSeed: 5381,
     nextElectionYear: 1954, gameOver: null, activeEdicts: [], edictCooldowns: {}, issuedOnce: {}, jailUsed: 0, jailReleases: [],
     ...calculate([], 8, { highSchool: 1, college: 1 }, { ...defaultIslandModifiers }, 3000),
@@ -549,11 +568,37 @@ export class GameState {
   }
 
   private simulate(placed = this.state.placed, population = this.state.population, money = this.state.money, educated = this.state.educated, modifiers = this.state.modifiers) {
-    return calculate(placed, population, educated, modifiers, money, this.state.superpowers, currentMonthIndex(this.state));
+    return calculate(placed, population, educated, modifiers, money, this.state.superpowers, currentMonthIndex(this.state), population - this.state.prisoners.length);
   }
 
   private update(patch: Partial<GameSnapshot>) {
-    this.state = { ...this.state, ...patch };
+    if (patch.population !== undefined && patch.population !== this.state.population && patch.citizenIds === undefined) {
+      const citizenIds = [...this.state.citizenIds];
+      const detained = new Set((patch.prisoners ?? this.state.prisoners).map((prisoner) => prisoner.citizenId));
+      for (let index = citizenIds.length - 1; index >= 0 && citizenIds.length > patch.population; index--) {
+        if (!detained.has(citizenIds[index])) citizenIds.splice(index, 1);
+      }
+      if (citizenIds.length > patch.population) throw new Error("Detained citizens cannot emigrate.");
+      while (citizenIds.length < patch.population) citizenIds.push(this.nextCitizenId++);
+      patch = { ...patch, citizenIds };
+    }
+    const next = { ...this.state, ...patch };
+    const living = new Set(next.citizenIds);
+    const prisoners = next.prisoners.filter((entry) => living.has(entry.citizenId) && entry.releaseAt > currentMonthIndex(next));
+    if (prisoners.length !== next.prisoners.length) next.prisoners = prisoners;
+    next.jailUsed = next.prisoners.length;
+    next.jailReleases = next.prisoners.map((entry) => entry.releaseAt);
+    const activeEdicts = next.activeEdicts.filter((entry) => entry.citizenId === undefined || living.has(entry.citizenId));
+    if (activeEdicts.length !== next.activeEdicts.length) next.activeEdicts = activeEdicts;
+    if (next.inspectedCitizen !== null && !living.has(next.inspectedCitizen)) next.inspectedCitizen = null;
+    const departedOrders = next.citizenOrders.filter((order) => !living.has(order.citizenId));
+    if (departedOrders.length) {
+      next.citizenOrders = next.citizenOrders.filter((order) => living.has(order.citizenId));
+      next.money += departedOrders.reduce((sum, order) => sum + order.cost, 0);
+      Object.assign(next, calculate(next.placed, next.population, next.educated, next.modifiers, next.money, next.superpowers, currentMonthIndex(next), next.population - next.prisoners.length));
+      next.notice = `${departedOrders.length} security order(s) cancelled because their targets left the island. Reserved funds refunded.`;
+    }
+    this.state = next;
     this.listeners.forEach((listener) => listener());
   }
 
@@ -593,12 +638,17 @@ export class GameState {
   }
 
   select(type: BuildingType | null) {
-    this.update({ selected: type, inspectedBuilding: null, notice: type ? `Place a ${buildings.find((item) => item.id === type)!.name} on level land. Esc cancels.` : "Placement cancelled." });
+    this.update({ selected: type, inspectedBuilding: null, inspectedCitizen: null, targetingEdict: null, notice: type ? `Place a ${buildings.find((item) => item.id === type)!.name} on level land. Esc cancels.` : "Placement cancelled." });
   }
 
   inspectBuilding(index: number | null) {
     if (index !== null && !this.state.placed[index]) throw new Error("Cannot inspect a missing building.");
-    this.update({ inspectedBuilding: index });
+    this.update({ inspectedBuilding: index, inspectedCitizen: null, selected: null, targetingEdict: null });
+  }
+
+  inspectCitizen(citizenId: number | null) {
+    if (citizenId !== null && !this.state.citizenIds.includes(citizenId)) throw new Error("Cannot inspect a missing citizen.");
+    this.update({ inspectedCitizen: citizenId, inspectedBuilding: null, selected: null, targetingEdict: null });
   }
 
   setBuildingCrop(index: number, crop: FarmCrop) {
@@ -677,46 +727,78 @@ export class GameState {
       factionShareMultipliers: { ...this.baseModifiers.factionShareMultipliers, ...patch.factionShareMultipliers },
     };
     const modifiers = this.effectiveModifiers();
-    this.update(calculate(this.state.placed, this.state.population, this.state.educated, modifiers, this.state.money, this.state.superpowers, currentMonthIndex(this.state)));
+    this.update(this.simulate(this.state.placed, this.state.population, this.state.money, this.state.educated, modifiers));
   }
 
-  issueEdict(id: string): string | null {
+  selectEdictTarget(id: EdictId | null): string | null {
+    if (id === null) {
+      this.update({ targetingEdict: null, notice: "Citizen targeting cancelled. No payment made." });
+      return null;
+    }
+    const edict = edictDefinitions.find((entry) => entry.id === id);
+    if (!edict || edict.category !== "people") return "Select a people edict to target a citizen.";
+    if (this.state.gameOver) return this.state.gameOver;
+    const reason = edictUnavailableReason(id, this.state, missingRequirement);
+    if (reason) return reason;
+    this.update({
+      targetingEdict: id, selected: null, inspectedBuilding: null, inspectedCitizen: null,
+      notice: `${edict.name}: click a visible citizen to pay $${edictCost(id, this.state).toLocaleString()} and activate. Esc or right-click cancels.`,
+    });
+    return null;
+  }
+
+  issueEdict(id: string, citizenId?: number): string | null {
     const edict = edictDefinitions.find((entry) => entry.id === id);
     if (!edict) return `Unknown edict: ${id}`;
-    const edictId = edict.id as EdictId;
-    const reason = edictUnavailableReason(edictId, this.state, missingRequirement);
+    const edictId = edict.id;
+    if (edict.category === "people") {
+      if (this.state.gameOver) return this.state.gameOver;
+      if (citizenId === undefined) return "Choose a citizen before paying for this edict.";
+      if (!Number.isInteger(citizenId) || !this.state.citizenIds.includes(citizenId)) return "That citizen is no longer on the island.";
+    } else if (citizenId !== undefined) return "This edict does not target individual citizens.";
+    const reason = edictUnavailableReason(edictId, this.state, missingRequirement, citizenId);
     if (reason) return reason;
 
     const cost = edictCost(edictId, this.state);
+    if (edictId === "arrest" || edictId === "capture" || edictId === "eliminate") {
+      const source = citizenOrderSource(this.state, edictId);
+      const destination = edictId === "eliminate" ? null : detentionSite(this.state, edictId);
+      if (citizenId === undefined || source === null || (edictId !== "eliminate" && destination === null)) throw new Error("Validated security order has no officer, target or cell.");
+      const order: CitizenOrder = {
+        id: this.nextCitizenOrderId++, action: edictId, citizenId, source, destination,
+        cost, skim: Math.floor(cost * this.state.modifiers.swissSkimRate), status: "queued",
+      };
+      const money = this.state.money - cost;
+      this.update({
+        money, citizenOrders: [...this.state.citizenOrders, order], targetingEdict: null, inspectedCitizen: citizenId,
+        lastCitizenEdict: { id: edictId, citizenId },
+        ...this.simulate(this.state.placed, this.state.population, money),
+        notice: `${edict.name} ordered for Citizen #${citizenId}. $${cost} reserved; awaiting ${edictId === "eliminate" ? "a guard-tower soldier" : "police"}.`,
+      });
+      return null;
+    }
     const monthIndex = currentMonthIndex(this.state);
     const activeEdicts = [...this.state.activeEdicts];
-    if (edict.toggle || edict.durationMonths || (edict.once && edict.modifiers)) activeEdicts.push({ id: edictId, expiresAt: edict.durationMonths ? monthIndex + edict.durationMonths : null });
+    if (edict.toggle || edict.durationMonths || (edict.once && edict.modifiers)) activeEdicts.push({
+      id: edictId, expiresAt: edict.durationMonths ? monthIndex + edict.durationMonths : null,
+      ...(citizenId === undefined ? {} : { citizenId }),
+    });
     const issuedOnce = edict.once ? { ...this.state.issuedOnce, [edictId]: true as const } : this.state.issuedOnce;
     const edictCooldowns = edict.cooldownMonths ? { ...this.state.edictCooldowns, [edict.cooldownKey ?? edictId]: monthIndex + edict.cooldownMonths } : this.state.edictCooldowns;
     let money = this.state.money - cost;
     let slushFund = this.state.slushFund;
     let rebels = this.state.rebels;
-    let jailUsed = this.state.jailUsed;
-    let jailReleases = this.state.jailReleases;
+    let prisoners = this.state.prisoners;
+    let citizenIds = this.state.citizenIds;
     let educated = this.state.educated;
     let superpowers = { ...this.state.superpowers };
     let rngSeed = this.state.rngSeed;
 
     switch (edict.event) {
-      case "arrest":
-      case "capture": {
-        rngSeed = (1664525 * rngSeed + 1013904223) >>> 0;
-        jailReleases = [...jailReleases, currentMonthIndex(this.state) + 60 + (rngSeed % 37)];
-        jailUsed = jailReleases.length;
-        rebels = Math.max(0, rebels - 1);
-        break;
-      }
       case "heretic": {
-        const factionAdjustments = { ...this.baseModifiers.factionAdjustments, religious: (this.baseModifiers.factionAdjustments.religious ?? 0) + 3 };
-        this.baseModifiers = { ...this.baseModifiers, factionAdjustments };
+        activeEdicts.push({ id: edictId, citizenId, expiresAt: null });
         break;
       }
-      case "eliminate": rebels = Math.max(0, rebels - 1); break;
       case "praise-us": superpowers = { us: Math.min(100, superpowers.us + 10), ussr: Math.max(0, superpowers.ussr - 4) }; break;
       case "praise-ussr": superpowers = { us: Math.max(0, superpowers.us - 4), ussr: Math.min(100, superpowers.ussr + 10) }; break;
       case "trade-us":
@@ -732,7 +814,13 @@ export class GameState {
       }
       case "amnesty": rebels = 0; break;
       case "early-election": this.baseModifiers = { ...this.baseModifiers, electionTrigger: true }; break;
-      case "open-jails": jailUsed = 0; jailReleases = []; superpowers.us = Math.max(0, superpowers.us - 10); break;
+      case "open-jails": {
+        const exiles = new Set(prisoners.map((entry) => entry.citizenId));
+        citizenIds = citizenIds.filter((id) => !exiles.has(id));
+        prisoners = [];
+        superpowers.us = Math.max(0, superpowers.us - 10);
+        break;
+      }
       case "papal-visit": {
         const factionAdjustments = { ...this.baseModifiers.factionAdjustments };
         for (const faction of ["communists", "capitalists", "intellectuals", "militarists", "environmentalists", "nationalists", "loyalists"] as const) factionAdjustments[faction] = (factionAdjustments[faction] ?? 0) + 15;
@@ -745,10 +833,69 @@ export class GameState {
     const skimRate = this.state.modifiers.swissSkimRate;
     slushFund += Math.floor(cost * skimRate);
     const modifiers = this.effectiveModifiers(activeEdicts);
+    const population = citizenIds.length;
+    educated = { highSchool: Math.min(educated.highSchool, population), college: Math.min(educated.college, Math.max(0, population - educated.highSchool)) };
     this.update({
-      money, slushFund, rebels, jailUsed, jailReleases, superpowers, rngSeed, activeEdicts, issuedOnce, edictCooldowns,
-      ...calculate(this.state.placed, this.state.population, educated, modifiers, money, superpowers, currentMonthIndex(this.state)),
-      notice: `${edict.name} issued for $${cost.toLocaleString()}.`,
+      money, slushFund, rebels, prisoners, citizenIds, population, superpowers, rngSeed, activeEdicts, issuedOnce, edictCooldowns,
+      targetingEdict: null,
+      inspectedCitizen: citizenId !== undefined && citizenIds.includes(citizenId) ? citizenId : this.state.inspectedCitizen,
+      lastCitizenEdict: citizenId === undefined ? this.state.lastCitizenEdict : { id: edictId, citizenId },
+      ...calculate(this.state.placed, population, educated, modifiers, money, superpowers, monthIndex, population - prisoners.length),
+      notice: `${edict.name}${citizenId === undefined ? "" : ` on Citizen #${citizenId}`} issued for $${cost.toLocaleString()}.`,
+    });
+    return null;
+  }
+
+  setCitizenOrderStatus(id: number, status: CitizenOrderStatus): string | null {
+    const order = this.state.citizenOrders.find((entry) => entry.id === id);
+    if (!order) return "This security order no longer exists.";
+    if (order.status === status) return null;
+    const citizenOrders = this.state.citizenOrders.map((entry) => entry.id === id ? { ...entry, status } : entry);
+    this.update({
+      citizenOrders,
+      ...(status === "blocked" || status === "waiting-for-staff" || status === "waiting-for-cell"
+        ? { notice: `Citizen #${order.citizenId}: ${citizenOrderStatusLabels[status]}.` } : {}),
+    });
+    return null;
+  }
+
+  cancelCitizenOrder(id: number): string | null {
+    const order = this.state.citizenOrders.find((entry) => entry.id === id);
+    if (!order) return "This security order no longer exists.";
+    const money = this.state.money + order.cost;
+    this.update({
+      money, citizenOrders: this.state.citizenOrders.filter((entry) => entry.id !== id),
+      ...this.simulate(this.state.placed, this.state.population, money),
+      notice: `Security order for Citizen #${order.citizenId} cancelled. $${order.cost} refunded.`,
+    });
+    return null;
+  }
+
+  completeCitizenOrder(id: number): string | null {
+    const order = this.state.citizenOrders.find((entry) => entry.id === id);
+    if (!order) return "This security order no longer exists.";
+    if (this.state.gameOver || this.state.paused) return "Security orders cannot complete while the simulation is stopped.";
+    const blocked = citizenOrderBlock(this.state, order);
+    if (blocked) {
+      this.setCitizenOrderStatus(id, blocked);
+      return citizenOrderStatusLabels[blocked];
+    }
+    const citizenIds = order.action === "eliminate" ? this.state.citizenIds.filter((citizenId) => citizenId !== order.citizenId) : this.state.citizenIds;
+    const prisoners = order.action === "eliminate"
+      ? this.state.prisoners.filter((entry) => entry.citizenId !== order.citizenId)
+      : [...this.state.prisoners, {
+        citizenId: order.citizenId, buildingIndex: order.destination!,
+        releaseAt: currentMonthIndex(this.state) + (order.action === "arrest" ? 84 : 36),
+      }];
+    const population = citizenIds.length;
+    const highSchool = Math.min(this.state.educated.highSchool, population);
+    const educated = { highSchool, college: Math.min(this.state.educated.college, population - highSchool) };
+    this.update({
+      citizenOrders: this.state.citizenOrders.filter((entry) => entry.id !== id), citizenIds, population, prisoners,
+      slushFund: this.state.slushFund + order.skim,
+      lastCitizenEdict: { id: order.action, citizenId: order.citizenId },
+      ...calculate(this.state.placed, population, educated, this.state.modifiers, this.state.money, this.state.superpowers, currentMonthIndex(this.state), population - prisoners.length),
+      notice: `${order.action === "eliminate" ? "Elimination" : order.action === "arrest" ? "Arrest" : "Capture"} of Citizen #${order.citizenId} completed by the dispatched ${order.action === "eliminate" ? "soldier" : "police officer"}.`,
     });
     return null;
   }
@@ -760,7 +907,7 @@ export class GameState {
     if (!this.state.activeEdicts.some((entry) => entry.id === edict.id)) return `${edict.name} is not active.`;
     const activeEdicts = this.state.activeEdicts.filter((entry) => entry.id !== edict.id);
     const modifiers = this.effectiveModifiers(activeEdicts);
-    this.update({ activeEdicts, ...calculate(this.state.placed, this.state.population, this.state.educated, modifiers, this.state.money, this.state.superpowers, currentMonthIndex(this.state)), notice: `${edict.name} cancelled.` });
+    this.update({ activeEdicts, ...this.simulate(this.state.placed, this.state.population, this.state.money, this.state.educated, modifiers), notice: `${edict.name} cancelled.` });
     return null;
   }
 
@@ -775,7 +922,7 @@ export class GameState {
 
   advanceTime(seconds: number): number {
     if (!Number.isFinite(seconds) || seconds < 0) throw new Error("Invalid elapsed time.");
-    if (this.state.paused) return 0;
+    if (this.state.paused || this.state.gameOver) return 0;
     const elapsed = seconds * this.state.speed;
     this.elapsed += elapsed;
     while (this.elapsed >= 5) {
@@ -834,7 +981,7 @@ export class GameState {
   advanceMonth() {
     if (this.state.paused || this.state.gameOver) return;
     const { placed, population, month, year } = this.state;
-    const current = calculate(placed, population, this.state.educated, this.state.modifiers, this.state.money, this.state.superpowers, currentMonthIndex(this.state));
+    const current = this.simulate();
     const staffed = (type: BuildingType) => placed.reduce((sum, building, i) => sum + (building.type === type ? current.buildingOperation[i] : 0), 0);
     const highSchoolGraduates = Math.min(Math.max(0, population - this.state.educated.highSchool - this.state.educated.college), staffed("high-school") * 2 * this.state.modifiers.educationMultiplier);
     const collegeGraduates = Math.min(this.state.educated.highSchool + highSchoolGraduates, staffed("college") * this.state.modifiers.educationMultiplier);
@@ -851,7 +998,7 @@ export class GameState {
       const incoming = (!hasImmigrationMechanic ? 1 : officeClosed ? 0
         : 1 + (staffed("dock") > 0 ? 1 : 0) + (staffed("airport") > 0 ? 2 : 0) + (staffed("immigration-office") > 0 ? 1 : 0)) * this.state.modifiers.populationGrowthMultiplier;
       nextPopulation += Math.min(Math.round(incoming), current.housing - population, current.jobs - population);
-    } else if (current.approval < 35 && population > 0) {
+    } else if (current.approval < 35 && population > this.state.prisoners.length) {
       nextPopulation--;
     }
     nextEducated.highSchool = Math.min(nextEducated.highSchool, nextPopulation);
@@ -859,7 +1006,11 @@ export class GameState {
 
     let seed = this.state.rngSeed >>> 0;
     const random = () => { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 0x100000000; };
-    const disaffected = Object.values(current.factions).reduce((sum, faction) => sum + (faction.respect < 25 ? faction.share * population : 0), 0);
+    const politicalParticipants = this.state.citizenIds.filter((id) => {
+      const status = citizenStatus(this.state, id)!;
+      return !status.heretic && !status.prisoner;
+    }).length;
+    const disaffected = Object.values(current.factions).reduce((sum, faction) => sum + (faction.respect < 25 ? faction.share * politicalParticipants : 0), 0);
     let rebels = this.state.rebels;
     for (let citizen = 0; citizen < Math.floor(disaffected); citizen++) if (random() < Math.max(0, 0.025 + this.state.modifiers.rebelsModifier + this.state.modifiers.protestChanceModifier / 100)) rebels++;
     rebels = Math.max(0, rebels - Math.floor(Math.min(rebels, current.jailCapacity)));
@@ -891,7 +1042,8 @@ export class GameState {
     const electionDue = !this.state.modifiers.cancelElections && (this.state.modifiers.electionTrigger || (nextMonth === 1 && nextYear >= 1954 && (nextYear - 1954) % 4 === 0));
     if (electionDue) {
       const weightedRespect = Object.values(current.factions).reduce((sum, faction) => sum + faction.respect * faction.share, 0);
-      const vote = Math.round((weightedRespect + current.approval) / 2);
+      const personalRespect = this.state.citizenIds.reduce((sum, id) => sum + citizenStatus(this.state, id)!.respectAdjustment, 0) / Math.max(1, population);
+      const vote = Math.round(clamp((weightedRespect + current.approval) / 2 + personalRespect));
       if (vote < 50) gameOver = `El Presidente lost the election with ${vote}% of the vote.`;
       else notice = `Election won with ${vote}% of the vote.`;
       nextElectionYear = nextYear + (nextYear < 1954 ? 1954 - nextYear : 4);
@@ -903,8 +1055,11 @@ export class GameState {
     const nextMonthIndex = nextYear * 12 + nextMonth - 1;
     const activeEdicts = this.state.activeEdicts.filter((entry) => entry.expiresAt === null || entry.expiresAt > nextMonthIndex);
     const modifiers = this.effectiveModifiers(activeEdicts);
-    const nextJailCapacity = calculateIsland({ placed, population: nextPopulation, buildingStaffing: current.buildingStaffing, jobs: current.jobs, educated: nextEducated, money: this.state.money, superpowers, food: current.food, modifiers }).jailCapacity;
-    const jailReleases = this.state.jailReleases.filter((releaseAt) => releaseAt > nextMonthIndex).slice(0, Math.floor(nextJailCapacity));
+    const prisoners = this.state.prisoners.filter((entry) => entry.releaseAt > nextMonthIndex);
+    const released = this.state.prisoners.filter((entry) => entry.releaseAt <= nextMonthIndex);
+    if (!notice && released.length) notice = released.length === 1
+      ? `Citizen #${released[0].citizenId} completed their sentence and returned to civilian life.`
+      : `${released.length} citizens completed their sentences and returned to civilian life.`;
     this.update({
       money: this.state.money + current.balance - raided,
       population: nextPopulation,
@@ -917,10 +1072,9 @@ export class GameState {
       gameOver,
       paused: Boolean(gameOver),
       activeEdicts,
-      jailReleases,
-      jailUsed: jailReleases.length,
+      prisoners,
       notice: notice || this.state.notice,
-      ...calculate(placed, nextPopulation, nextEducated, modifiers, this.state.money + current.balance - raided, superpowers, nextMonthIndex),
+      ...calculate(placed, nextPopulation, nextEducated, modifiers, this.state.money + current.balance - raided, superpowers, nextMonthIndex, nextPopulation - prisoners.length),
     });
   }
 }

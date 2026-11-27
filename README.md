@@ -4,13 +4,15 @@ Palmarico is an original island-management prototype inspired by classic city bu
 
 ## Run
 
+Development and production builds use Vite 8 (Node.js 20.19+ or 22.12+).
+
 ```sh
 npm install
 npm run dev
 ```
 
 Open the address printed by Vite. Run `npm run build` for a production build and
-`npm test` for simulation and grid tests (Node.js 22.6 or newer).
+`npm test` for simulation and grid tests (Node.js 22.12 or newer).
 
 Building footprints and grid rules follow the Tropico 1 reference in
 [docs/game-info.md](docs/game-info.md).
@@ -19,7 +21,7 @@ Building footprints and grid rules follow the Tropico 1 reference in
 
 When running the development server (`npm run dev`), the island starts as a
 developer showcase with one of every implemented building laid out in a grid
-for quick inspection. Open `http://127.0.0.1:5187/?normal-start` (or your dev
+for quick inspection. Open `http://127.0.0.1:5173/?normal-start` (or your dev
 URL with `?normal-start`) for the regular start described below; production
 builds always use the regular start.
 

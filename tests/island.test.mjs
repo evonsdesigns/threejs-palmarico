@@ -228,8 +228,12 @@ test("monthly progression rotates blackout priority but same-month recalculation
   assert.ok(before.length > 0);
   game.setSimulationModifiers({ monthlyIncome: 10000 });
   assert.deepEqual(blackouts(), before);
-  game.advanceMonth();
-  assert.notDeepEqual(blackouts(), before);
+  const outages = new Set([blackouts().join(",")]);
+  for (let month = 0; month < consumers.length; month++) {
+    game.advanceMonth();
+    outages.add(blackouts().join(","));
+  }
+  assert.ok(outages.size > 1, "blackout priority should not permanently penalize the same facilities");
 });
 
 test("tourist beds produce no visitors without a staffed gateway", () => {

@@ -1,3 +1,41 @@
+# Edict menu presentation
+
+The menu uses square image tiles with persistent names, prices, active/cooldown
+badges and requirement tooltips. Issuing and cancelling edicts use the existing
+simulation actions.
+
+People Edict tiles select a citizen-targeting mode; they do not pay or activate
+on the menu click. Click a visible citizen on the map to confirm the target and
+pay once. Empty terrain, buildings, hidden citizens and camera drags do not
+activate edicts. The card, HUD prompt and crosshair indicate targeting.
+Escape, right-click, the selected tile or **Cancel targeting** cancel for free;
+selecting construction also cancels it. Funds and requirements are checked again
+at confirmation. A citizen's active bribe does not prevent bribing someone else.
+
+After confirmation, the citizen inspector shows personal effects and remaining
+sentence time. Click an unselected citizen on the map or the Population readout
+to inspect residents; Previous/Next also reaches people indoors or detained.
+Locate pans to their current building or map position. Gold tags show active
+bribes, purple tags show heresy, and a ground ring follows the inspected resident.
+Bribe and Heretic apply immediately. Arrest/Capture dispatch police from a staffed
+Police Station; Eliminate dispatches a soldier from a staffed Guard Station
+(guard tower). An orange target tag and the inspector show pending orders and
+officer progress. The target stays free until the unit reaches them. Police then
+remove the target from street routines and labor until release; Eliminate removes
+that exact resident. Sentences start on arrival. Blocked routes, missing staff and
+reserved-cell shortages wait instead of completing remotely. Cancel order and
+refund releases the reservation and stops the unit. Open the Jails exiles actual detainees.
+Implementation details and remaining approximations are in
+[the simulation readme](../../logic/readme.md#citizen-targeted-edicts).
+
+`edict-images.ts` links the 23 edict images available on
+[the Tropico Wiki edicts page](https://tropico.fandom.com/wiki/Edicts_(Tropico_1)).
+The images remain externally hosted; no ownership or redistribution license is
+claimed. Source attribution is kept here rather than in the HUD. Entries without an image on that page
+show a named parchment tile, rather than borrowing a different edict's artwork.
+Network image failures are logged and visibly marked as unavailable; gameplay
+and labels remain usable without images.
+
 # People Edicts
 Bribe
 Cost: $1000
@@ -24,7 +62,7 @@ Effects: A bishop will tag the target as heretic, making them unable to lead or 
 
 Eliminate
 Cost: $500
-Requirements: At least one soldier.
+Requirements in Palmarico: A staffed Guard Station (guard tower). An Armory or Army Base alone cannot dispatch the order.
 Effects: A soldier will shoot to murder the targeted citizen. If successful, the target is killed, and their family's respect for El Presidente drops. The respect from people within a 10 cell radius from the murder location will also be influenced. The target may run or fight back, and if they succeed, the target becomes a rebel.
 	
 # Foreign Policy Edicts

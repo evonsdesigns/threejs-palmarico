@@ -526,6 +526,7 @@ body {
 
     /* Adjust the main HUD container for mobile to allow vertical flow */
     #hud-container {
+        pointer-events: none;
         position: fixed;
         /* Make it stick to the viewport */
         bottom: 0;

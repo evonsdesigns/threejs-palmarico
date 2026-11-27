@@ -121,7 +121,13 @@ class GameScene {
     const delta = Math.min(this.clock.getDelta(), 0.1);
     this.water.update(delta);
     const simulationDelta = game.advanceTime(delta);
-    if (simulationDelta > 0) this.residents.update(simulationDelta, game.getSnapshot());
+    if (simulationDelta > 0) {
+      for (const event of this.residents.update(simulationDelta, game.getSnapshot())) {
+        const error = event.type === "arrived" ? game.completeCitizenOrder(event.orderId)
+          : game.setCitizenOrderStatus(event.orderId, event.status);
+        if (error) game.notify(error);
+      }
+    }
     this.controls.update();
     this.updateDaylight(simulationDelta);
     this.shadowElapsed += delta;
@@ -171,6 +177,15 @@ class GameScene {
     this.controls.update();
   }
 
+  public locateCitizen(citizenId: number) {
+    const position = this.residents.positionOf(citizenId);
+    if (!position) {
+      game.notify("This citizen has no known location on the map.");
+      return;
+    }
+    this.moveCameraTo(position.x, position.z);
+  }
+
   public get cameraView() {
     return this.camera;
   }
@@ -202,7 +217,8 @@ class GameScene {
   };
 
   private syncGhost = () => {
-    const { selected, farmCrop } = game.getSnapshot();
+    const { selected, farmCrop, targetingEdict } = game.getSnapshot();
+    this.renderer.domElement.style.cursor = targetingEdict ? "crosshair" : "";
     const crop = selected === "farm" ? farmCrop : null;
     if (!this.ready || (selected === this.ghostType && crop === this.ghostCrop)) return;
     if (this.ghost) {
@@ -239,6 +255,11 @@ class GameScene {
   };
 
   private onContextMenu = (event: MouseEvent) => {
+    if (game.getSnapshot().targetingEdict) {
+      event.preventDefault();
+      game.selectEdictTarget(null);
+      return;
+    }
     if (!game.getSnapshot().selected) return;
     event.preventDefault();
     game.rotatePlacement(1);
@@ -249,7 +270,9 @@ class GameScene {
     if (event.key === "g" || event.key === "G") this.terrainMesh?.setGridMode(this.terrainMesh.grid === 1 ? 0 : 1);
     else if (event.key === "c" || event.key === "C") this.terrainMesh?.setGridMode(this.terrainMesh.grid === 2 ? 0 : 2);
     else if ((event.key === "[" || event.key === "]") && game.getSnapshot().selected) game.rotatePlacement(event.key === "]" ? 1 : -1);
+    else if (event.key === "Escape" && game.getSnapshot().targetingEdict) game.selectEdictTarget(null);
     else if (event.key === "Escape" && game.getSnapshot().selected) game.select(null);
+    else if (event.key === "Escape" && game.getSnapshot().inspectedCitizen !== null) game.inspectCitizen(null);
     else if (event.key === "Escape" && game.getSnapshot().inspectedBuilding !== null) game.inspectBuilding(null);
   };
 
@@ -593,13 +616,27 @@ class GameScene {
     const down = this.pointerDown;
     this.pointerDown = null;
     if (!down || event.button !== 0 || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 5) return;
-    const type = game.getSnapshot().selected;
-    if (!type) {
+    const { selected: type, targetingEdict } = game.getSnapshot();
+    if (targetingEdict || !type) {
       const mouse = new THREE.Vector2(event.clientX / window.innerWidth * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
       this.raycaster.setFromCamera(mouse, this.camera);
-      const hit = this.raycaster.intersectObjects(this.placedModels, true)[0];
+      const person = this.residents.pick(this.raycaster);
+      const building = this.raycaster.intersectObjects(this.placedModels, true)[0];
       const ground = this.groundHit(this.raycaster.ray);
-      let object: THREE.Object3D | null = hit && (!ground || hit.distance < ground.distance) ? hit.object : null;
+      const visiblePerson = person && (!building || building.distance > person.distance) && (!ground || ground.distance > person.distance);
+      if (targetingEdict) {
+        if (!visiblePerson) game.notify("Click a visible citizen, not the ground or a building. Esc cancels without payment.");
+        else {
+          const error = game.issueEdict(targetingEdict, person.citizenId);
+          if (error) game.notify(error);
+        }
+        return;
+      }
+      if (visiblePerson) {
+        game.inspectCitizen(person.citizenId);
+        return;
+      }
+      let object: THREE.Object3D | null = building && (!ground || building.distance < ground.distance) ? building.object : null;
       while (object && object.userData.buildingIndex === undefined) object = object.parent;
       game.inspectBuilding(object ? object.userData.buildingIndex : null);
       return;

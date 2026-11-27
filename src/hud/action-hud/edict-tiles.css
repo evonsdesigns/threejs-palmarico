@@ -1,0 +1,43 @@
+.edict-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  align-content: start;
+  gap: 4px;
+  padding: 3px 6px 6px;
+  min-height: 0;
+  overflow: auto;
+}
+.edict-tile-wrap { display: block; min-width: 0; aspect-ratio: 1; }
+.edict-tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  color: #fff0c8;
+  border: 2px ridge #8b8262;
+  background: radial-gradient(ellipse at 50% 30%, #bda56f, #685337 80%);
+  box-shadow: inset 0 0 10px #382819;
+  cursor: pointer;
+  font: bold 10px/1.15 Georgia, serif;
+  text-shadow: 0 1px 2px #160f08, 1px 0 2px #160f08;
+}
+.edict-tile__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.edict-tile__name {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 15px 3px 4px;
+  background: linear-gradient(transparent, rgba(24, 17, 10, .95) 45%);
+  overflow-wrap: anywhere;
+}
+.edict-tile__cost { position: absolute; top: 0; right: 0; padding: 2px 3px; background: rgba(24, 17, 10, .8); font: bold 10px Arial, sans-serif; }
+.edict-tile__status { position: absolute; left: 0; top: 17px; padding: 2px 3px; background: #4a5429; font: bold 9px Arial, sans-serif; }
+.edict-tile__placeholder { display: grid; align-content: start; justify-items: center; padding-top: 6px; font-size: 30px; color: #eed29b; }
+.edict-tile__placeholder small { padding: 0 3px; font: 8px Arial, sans-serif; }
+.edict-tile:hover, .edict-tile[data-active="true"] { border-color: #e2ca70; filter: brightness(1.13); }
+.edict-tile:focus-visible { outline: 2px solid #fff2ac; outline-offset: -3px; }
+.edict-tile:disabled { filter: grayscale(.7) brightness(.75); cursor: not-allowed; }
+.edict-tiles__targeting { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; color: #30271d; font: bold 11px Arial, sans-serif; }
+.edict-tiles__targeting button { color: #f0dfb6; background: #4a4035; border: 2px ridge #ad9c78; cursor: pointer; }
+.edict-tiles__targeting button:focus-visible { outline: 2px solid #fff2ac; outline-offset: 2px; }
