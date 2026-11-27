@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildings, GameState, starterBuildings, buildingCost } from "../src/logic/game.ts";
 import { relationLabel, atLeast } from "../src/logic/island.ts";
+import { buildingEffects } from "../src/logic/building-effects.ts";
 
 function showcase() {
   const game = new GameState();
@@ -191,6 +192,44 @@ test("a plant without college engineers cannot energize substations", () => {
   const plant = placed.findIndex((building) => building.type === "electric-power-plant");
   assert.equal(state.buildingStaffing[plant], 0);
   assert.ok(state.powered.every((powered) => !powered));
+});
+
+test("overloads stop hospital services and clear when excess load is removed", () => {
+  const consumers = ["sports-complex", "casino", "luxury-hotel", "radio-station", "tv-station", "gourmet-restaurant", "movie-theater", "nightclub", "hospital"];
+  const priority = ["electric-power-plant", ...consumers];
+  const ordered = [...priority, ...buildings.map(({ id }) => id).filter((id) => !priority.includes(id))];
+  const game = new GameState();
+  game.initializeShowcase(ordered.map((type, index) => ({ type, x: priority.includes(type) ? 0 : 10000 + index * 40, z: 0 })));
+  const hospital = ordered.indexOf("hospital");
+  const overloaded = game.getSnapshot();
+  assert.ok(overloaded.power.coverage[hospital]);
+  assert.ok(overloaded.power.demand > overloaded.power.generation);
+  assert.equal(overloaded.powered[hospital], false);
+  assert.equal(overloaded.buildingOperation[hospital], 0);
+
+  game.setSimulationModifiers({ closedBuildingTypes: ["casino"] });
+  const restored = game.getSnapshot();
+  assert.ok(restored.power.demand < restored.power.generation);
+  assert.equal(restored.powered[hospital], true);
+  assert.ok(restored.buildingOperation[hospital] > 0);
+  assert.ok(restored.ratings.health > overloaded.ratings.health);
+  for (const grid of restored.power.grids) assert.ok(grid.supplied <= grid.generation + 1e-9);
+});
+
+test("monthly progression rotates blackout priority but same-month recalculation does not", () => {
+  const consumers = buildings.filter(({ id }) => buildingEffects[id].powerDemand).map(({ id }) => id);
+  const priority = ["electric-power-plant", ...consumers];
+  const ordered = [...priority, ...buildings.map(({ id }) => id).filter((id) => !priority.includes(id))];
+  const game = new GameState();
+  game.initializeShowcase(ordered.map((type, index) => ({ type, x: priority.includes(type) ? 0 : 10000 + index * 40, z: 0 })));
+  const blackouts = () => game.getSnapshot().placed.filter((building, index) =>
+    buildingEffects[building.type].powerDemand && game.getSnapshot().power.coverage[index] && !game.getSnapshot().powered[index]).map(({ type }) => type);
+  const before = blackouts();
+  assert.ok(before.length > 0);
+  game.setSimulationModifiers({ monthlyIncome: 10000 });
+  assert.deepEqual(blackouts(), before);
+  game.advanceMonth();
+  assert.notDeepEqual(blackouts(), before);
 });
 
 test("tourist beds produce no visitors without a staffed gateway", () => {
