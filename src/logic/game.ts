@@ -1,7 +1,8 @@
-import { GRID_TILE_SIZE, footprintAt, rotatedTiles, type GridFootprint, type Rotation } from "./grid";
+import { footprintAt, rotatedTiles, type GridFootprint, type Rotation } from "./grid";
 import { buildingEffects, type Good } from "./building-effects";
 import { calculateIsland, defaultIslandModifiers, type FactionStateMap, type IslandModifiers, type IslandRatings } from "./island";
 import { combineEdictModifiers, currentMonthIndex, edictDefinitions, edictCost, edictUnavailableReason, type EdictId } from "./edicts";
+import { calculatePower, type PowerSummary } from "./power";
 
 export type BuildingType = "palace" | "shack" | "house" | "farm" | "market" | "clinic"
   | "apartment" | "condominium" | "luxury-house" | "bunkhouse" | "country-house"
@@ -260,6 +261,7 @@ export interface GameSnapshot {
   buildingIncome: number[];
   goods: Record<Good, { produced: number; processed: number }> ;
   powered: boolean[];
+  power: PowerSummary;
   ratings: IslandRatings;
   factions: FactionStateMap;
   superpowers: { us: number; ussr: number };
@@ -298,7 +300,7 @@ export function buildingProducedGood(building: PlacedBuilding): Good | undefined
   return building.type === "mine" ? building.mineResource ?? "gold" : buildingEffects[building.type].produces;
 }
 
-function calculate(placed: PlacedBuilding[], population: number, educated = { highSchool: 0, college: 0 }, modifiers: IslandModifiers = defaultIslandModifiers, money = 0, superpowers = { us: 50, ussr: 50 }) {
+function calculate(placed: PlacedBuilding[], population: number, educated = { highSchool: 0, college: 0 }, modifiers: IslandModifiers = defaultIslandModifiers, money = 0, superpowers = { us: 50, ussr: 50 }, powerMonth = 1950 * 12) {
   const defs = placed.map((building) => buildings.find((item) => item.id === building.type)!);
   const housing = defs.reduce((sum, item) => sum + item.housing, 0);
   const production = placed.map((building, index) => building.type === "farm" ? farmCropProduction[building.crop ?? "corn"] : defs[index]);
@@ -325,22 +327,9 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
     collegeWorkers = Math.max(0, collegeWorkers - assigned);
   });
 
-  const suppliers = placed.flatMap((building, index) => building.type === "electric-power-plant" && buildingStaffing[index] > 0
-    ? [{ building, radius: 24 * GRID_TILE_SIZE }] : []);
-  const connectedSubstations = new Set<number>();
-  for (let source = 0; source < suppliers.length; source++) {
-    const { building: supply, radius } = suppliers[source];
-    placed.forEach((building, index) => {
-      if (building.type !== "electric-substation" || buildingStaffing[index] <= 0 || connectedSubstations.has(index)) return;
-      if (Math.hypot(building.x - supply.x, building.z - supply.z) > radius) return;
-      connectedSubstations.add(index);
-      suppliers.push({ building, radius: 10 * GRID_TILE_SIZE });
-    });
-  }
-  const powered = placed.map((building) => suppliers.some(({ building: supply, radius }) =>
-    Math.hypot(building.x - supply.x, building.z - supply.z) <= radius));
+  const { powered, power } = calculatePower(placed, buildingStaffing, powerMonth);
   const buildingOperation = buildingStaffing.map((staff, index) =>
-    buildingEffects[placed[index].type].needsPower && !powered[index] ? 0 : staff);
+    buildingEffects[placed[index].type].powerDemand && !powered[index] ? 0 : staff);
 
   const goods = Object.fromEntries(goodNames.map((good) => [good, { produced: 0, processed: 0 }])) as Record<Good, { produced: number; processed: number }>;
   placed.forEach((building, index) => {
@@ -497,7 +486,7 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
   return {
     housing, food: staffedFood, jobs, approval, balance, pubVisitors, pubStaffedCapacity,
     restaurantVisitors, restaurantStaffedCapacity, haulingBonus, buildingStaffing, buildingOperation, buildingIncome,
-    goods, powered, ratings: island.ratings, factions: island.factions, military: island.military,
+    goods, powered, power, ratings: island.ratings, factions: island.factions, military: island.military,
     police: placed.reduce((sum, building, i) => sum + (building.type === "police-station" ? buildingStaffing[i] * 6 : 0), 0),
     jailCapacity: island.jailCapacity, tourists, buildingTourists, tourismIncome, educated, modifiers,
   };
@@ -560,7 +549,7 @@ export class GameState {
   }
 
   private simulate(placed = this.state.placed, population = this.state.population, money = this.state.money, educated = this.state.educated, modifiers = this.state.modifiers) {
-    return calculate(placed, population, educated, modifiers, money, this.state.superpowers);
+    return calculate(placed, population, educated, modifiers, money, this.state.superpowers, currentMonthIndex(this.state));
   }
 
   private update(patch: Partial<GameSnapshot>) {
@@ -688,7 +677,7 @@ export class GameState {
       factionShareMultipliers: { ...this.baseModifiers.factionShareMultipliers, ...patch.factionShareMultipliers },
     };
     const modifiers = this.effectiveModifiers();
-    this.update(calculate(this.state.placed, this.state.population, this.state.educated, modifiers, this.state.money, this.state.superpowers));
+    this.update(calculate(this.state.placed, this.state.population, this.state.educated, modifiers, this.state.money, this.state.superpowers, currentMonthIndex(this.state)));
   }
 
   issueEdict(id: string): string | null {
@@ -758,7 +747,7 @@ export class GameState {
     const modifiers = this.effectiveModifiers(activeEdicts);
     this.update({
       money, slushFund, rebels, jailUsed, jailReleases, superpowers, rngSeed, activeEdicts, issuedOnce, edictCooldowns,
-      ...calculate(this.state.placed, this.state.population, educated, modifiers, money, superpowers),
+      ...calculate(this.state.placed, this.state.population, educated, modifiers, money, superpowers, currentMonthIndex(this.state)),
       notice: `${edict.name} issued for $${cost.toLocaleString()}.`,
     });
     return null;
@@ -771,7 +760,7 @@ export class GameState {
     if (!this.state.activeEdicts.some((entry) => entry.id === edict.id)) return `${edict.name} is not active.`;
     const activeEdicts = this.state.activeEdicts.filter((entry) => entry.id !== edict.id);
     const modifiers = this.effectiveModifiers(activeEdicts);
-    this.update({ activeEdicts, ...calculate(this.state.placed, this.state.population, this.state.educated, modifiers, this.state.money, this.state.superpowers), notice: `${edict.name} cancelled.` });
+    this.update({ activeEdicts, ...calculate(this.state.placed, this.state.population, this.state.educated, modifiers, this.state.money, this.state.superpowers, currentMonthIndex(this.state)), notice: `${edict.name} cancelled.` });
     return null;
   }
 
@@ -845,7 +834,7 @@ export class GameState {
   advanceMonth() {
     if (this.state.paused || this.state.gameOver) return;
     const { placed, population, month, year } = this.state;
-    const current = calculate(placed, population, this.state.educated, this.state.modifiers, this.state.money, this.state.superpowers);
+    const current = calculate(placed, population, this.state.educated, this.state.modifiers, this.state.money, this.state.superpowers, currentMonthIndex(this.state));
     const staffed = (type: BuildingType) => placed.reduce((sum, building, i) => sum + (building.type === type ? current.buildingOperation[i] : 0), 0);
     const highSchoolGraduates = Math.min(Math.max(0, population - this.state.educated.highSchool - this.state.educated.college), staffed("high-school") * 2 * this.state.modifiers.educationMultiplier);
     const collegeGraduates = Math.min(this.state.educated.highSchool + highSchoolGraduates, staffed("college") * this.state.modifiers.educationMultiplier);
@@ -931,7 +920,7 @@ export class GameState {
       jailReleases,
       jailUsed: jailReleases.length,
       notice: notice || this.state.notice,
-      ...calculate(placed, nextPopulation, nextEducated, modifiers, this.state.money + current.balance - raided, superpowers),
+      ...calculate(placed, nextPopulation, nextEducated, modifiers, this.state.money + current.balance - raided, superpowers, nextMonthIndex),
     });
   }
 }

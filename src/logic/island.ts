@@ -149,7 +149,7 @@ export function calculateIsland(input: IslandInput): IslandResult {
     return sum + value * staff(i) * power;
   }, 0);
   const visitorServices: BuildingType[] = ["pub", "restaurant", "gourmet-restaurant", "cabaret", "nightclub", "casino", "movie-theater", "conservatory", "sports-complex"];
-  const serviceCapacity = placed.reduce((sum, item, i) => visitorServices.includes(item.type) ? sum + (buildingEffects[item.type].capacity ?? 0) * staff(i) * (buildingEffects[item.type].quality ?? 50) / 100 * (buildingEffects[item.type].needsPower && input.powered?.[i] ? 1.1 : 1) : sum, 0);
+  const serviceCapacity = placed.reduce((sum, item, i) => visitorServices.includes(item.type) ? sum + (buildingEffects[item.type].capacity ?? 0) * staff(i) * (buildingEffects[item.type].quality ?? 50) / 100 * (buildingEffects[item.type].powerDemand && input.powered?.[i] ? 1.1 : 1) : sum, 0);
   const religionCapacity = placed.reduce((sum, item, i) => item.type === "church" || item.type === "cathedral" ? sum + (buildingEffects[item.type].capacity ?? 0) * staff(i) : sum, 0);
   const healthCapacity = placed.reduce((sum, item, i) => item.type === "clinic" || item.type === "hospital" ? sum + (buildingEffects[item.type].capacity ?? 0) * staff(i) * (buildingEffects[item.type].quality ?? 50) / 50 * (item.type === "hospital" && input.powered?.[i] ? 1.1 : 1) : sum, 0);
   const schoolCapacity = placed.reduce((sum, item, i) => item.type === "high-school" || item.type === "college" ? sum + (buildingEffects[item.type].capacity ?? 0) * staff(i) * (item.type === "college" && input.powered?.[i] ? 1.1 : 1) : sum, 0);

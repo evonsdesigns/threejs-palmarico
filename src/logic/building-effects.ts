@@ -12,7 +12,8 @@ export interface BuildingEffect {
   attraction?: number;
   beauty?: number;
   pollution?: number;
-  needsPower?: boolean;
+  powerDemand?: number;
+  powerGeneration?: number;
   requires?: BuildingType[];
   requiresAny?: BuildingType[][];
   produces?: Good;
@@ -54,33 +55,33 @@ export const buildingEffects: Record<BuildingType, BuildingEffect> = {
   "electric-substation": { requires: ["electric-power-plant"] },
   "construction-office": none,
   bank: { education: "college" },
-  "electric-power-plant": { education: "college", pollution: 10 },
+  "electric-power-plant": { education: "college", pollution: 10, powerGeneration: 100 },
   dock: none,
   airport: { education: "college", attraction: 2, pollution: 5 },
   "guard-station": { requires: ["armory"] },
   "immigration-office": { education: "high-school" },
   newspaper: { education: "college" },
-  "radio-station": { education: "college", needsPower: true },
+  "radio-station": { education: "college", powerDemand: 10 },
   "police-station": none,
   "diplomatic-ministry": { education: "college" },
-  "tv-station": { education: "college", needsPower: true },
+  "tv-station": { education: "college", powerDemand: 15 },
   armory: { education: "college" },
   prison: { requires: ["police-station"] },
   "army-base": { education: "college" },
   "colonial-fort": { capacity: 12, quality: 70, attraction: 8 },
   church: { capacity: 48, quality: 60, education: "high-school" },
   "high-school": { capacity: 12, education: "high-school" },
-  hospital: { capacity: 80, quality: 90, education: "college", needsPower: true, requires: ["clinic"] },
+  hospital: { capacity: 80, quality: 90, education: "college", powerDemand: 15, requires: ["clinic"] },
   college: { capacity: 16, education: "college", requires: ["high-school"] },
   cathedral: { capacity: 80, quality: 95, education: "high-school", requires: ["church"] },
-  "gourmet-restaurant": { capacity: 12, quality: 80, needsPower: true, requires: ["restaurant"] },
+  "gourmet-restaurant": { capacity: 12, quality: 80, powerDemand: 5, requires: ["restaurant"] },
   cabaret: { capacity: 9, quality: 60, attraction: 2, ...needsLodging },
-  "movie-theater": { capacity: 16, quality: 50, needsPower: true },
-  nightclub: { capacity: 15, quality: 70, needsPower: true, attraction: 3, requires: ["pub"], ...needsLodging },
-  casino: { capacity: 24, quality: 55, education: "high-school", needsPower: true, attraction: 5, ...needsLodging },
+  "movie-theater": { capacity: 16, quality: 50, powerDemand: 2 },
+  nightclub: { capacity: 15, quality: 70, powerDemand: 8, attraction: 3, requires: ["pub"], ...needsLodging },
+  casino: { capacity: 24, quality: 55, education: "high-school", powerDemand: 25, attraction: 5, ...needsLodging },
   conservatory: { capacity: 12, quality: 85, education: "college" },
   "el-prez-home": { attraction: 4, beauty: 2, ...needsLodging },
-  "sports-complex": { capacity: 24, quality: 60, education: "high-school", needsPower: true },
+  "sports-complex": { capacity: 24, quality: 60, education: "high-school", powerDemand: 20 },
   "archaeological-site": { capacity: 10, quality: 70, education: "college", attraction: 4, ...needsLodging },
   "duty-free-shop": { capacity: 9, quality: 58, attraction: 3, ...needsLodging },
   "souvenir-shop": { capacity: 10, quality: 35, education: "high-school", attraction: 2, ...needsLodging },
@@ -95,7 +96,7 @@ export const buildingEffects: Record<BuildingType, BuildingEffect> = {
   "miniature-golf": { capacity: 12, quality: 52, attraction: 2, ...needsLodging },
   "nature-preserve": { capacity: 8, quality: 70, education: "college", attraction: 6, beauty: 12, ...needsLodging },
   hotel: { beds: 12, bedRate: 75, attraction: 2, quality: 50 },
-  "luxury-hotel": { beds: 15, bedRate: 150, attraction: 3, quality: 80, needsPower: true },
+  "luxury-hotel": { beds: 15, bedRate: 150, attraction: 3, quality: 80, powerDemand: 15 },
   "small-fountain": { beauty: 3 },
   "large-fountain": { beauty: 6 },
   statue: { beauty: 4 },

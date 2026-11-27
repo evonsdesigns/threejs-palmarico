@@ -14,6 +14,9 @@ const BuildingDetails: React.FC = () => {
   const educationName = effect.education === "high-school" ? "High school" : effect.education === "college" ? "College" : "None";
   const operation = state.buildingOperation[index];
   const closed = state.modifiers.closedBuildingTypes.includes(building.type);
+  const gridIndex = state.power.buildingGrid[index];
+  const grid = gridIndex === null ? null : state.power.grids[gridIndex];
+  const blackout = state.power.coverage[index] && !state.powered[index];
 
   return (
     <section className="building-details" aria-label="Building details">
@@ -25,13 +28,18 @@ const BuildingDetails: React.FC = () => {
       {definition.housing > 0 && <p>Housing: {definition.housing}</p>}
       {definition.jobs > 0 && <p>Jobs: {definition.jobs}</p>}
       <p>Staffing: {Math.round((state.buildingStaffing[index] ?? 0) * 100)}% · Education: {educationName}</p>
-      {(effect.needsPower || building.type === "electric-substation" || building.type === "electric-power-plant") && (
+      {(effect.powerDemand || building.type === "electric-substation" || building.type === "electric-power-plant") && (
         <p role={!state.powered[index] && !closed ? "status" : undefined}>
-          Power: {state.powered[index] ? "Connected" : "Disconnected"}.
-          {closed ? "" : building.type === "electric-power-plant" ? (operation > 0 ? " Supplying a 24-tile radius." : " College engineers are needed to generate electricity.")
+          Power: {state.powered[index] ? "Connected" : blackout ? "Rolling blackout" : "Disconnected"}.
+          {closed ? "" : building.type === "electric-power-plant" ? ` Generating ${((effect.powerGeneration ?? 0) * state.buildingStaffing[index]).toFixed(1)} MW of ${effect.powerGeneration} MW at full staffing.${operation > 0 ? " Supplying a 24-tile radius." : " College engineers are needed."}`
             : building.type === "electric-substation" ? (state.powered[index] ? " Extending the grid by 10 tiles." : " Connect to a staffed plant or a live substation.")
+            : blackout ? " Operations stopped by insufficient generation. Add engineers or another connected plant; substations do not generate power. Staff and upkeep are retained."
             : !state.powered[index] ? " Operations stopped. Build a staffed power plant or extend its grid with substations. Staff and upkeep are retained." : ""}
         </p>
+      )}
+      {effect.powerDemand !== undefined && <p>Demand: {(effect.powerDemand * state.buildingStaffing[index]).toFixed(1)} MW ({effect.powerDemand} MW at full staffing).</p>}
+      {grid && (effect.powerDemand || effect.powerGeneration || building.type === "electric-substation") && (
+        <p>Local grid: {grid.generation.toFixed(1)} MW generation; {grid.demand.toFixed(1)} MW demand; {grid.supplied.toFixed(1)} MW supplied.</p>
       )}
       {closed && <p>Operations stopped by edict.</p>}
       <p>Estimated income: ${Math.round(state.buildingIncome[index] ?? 0)}/month gross · upkeep ${buildingUpkeep(building)}/month.</p>

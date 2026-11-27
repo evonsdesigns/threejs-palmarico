@@ -10,10 +10,12 @@ const labels: Record<string, string> = {
 
 const Almanac: React.FC = () => {
   const state = useSyncExternalStore(game.subscribe, game.getSnapshot);
-  const powerUsers = state.placed.filter((building) => buildingEffects[building.type].needsPower
+  const powerUsers = state.placed.filter((building) => buildingEffects[building.type].powerDemand
     && !state.modifiers.closedBuildingTypes.includes(building.type)).length;
-  const disconnected = state.placed.filter((building, index) => buildingEffects[building.type].needsPower
-    && !state.modifiers.closedBuildingTypes.includes(building.type) && !state.powered[index]).length;
+  const disconnected = state.placed.filter((building, index) => buildingEffects[building.type].powerDemand
+    && !state.modifiers.closedBuildingTypes.includes(building.type) && !state.power.coverage[index]).length;
+  const blackouts = state.placed.filter((building, index) => buildingEffects[building.type].powerDemand
+    && !state.modifiers.closedBuildingTypes.includes(building.type) && state.power.coverage[index] && !state.powered[index]).length;
   return (
     <section aria-label="Island almanac" className="almanac">
       <div className="almanac__ratings">
@@ -36,8 +38,11 @@ const Almanac: React.FC = () => {
       <div className="almanac__section">
         <strong>Electricity</strong>
         <div>Active power plants: {state.placed.filter((building, index) => building.type === "electric-power-plant" && state.buildingOperation[index] > 0).length}</div>
-        <div>Connected facilities: {powerUsers - disconnected}/{powerUsers} requiring electricity</div>
-        {disconnected > 0 && <div role="status">{disconnected} {disconnected === 1 ? "facility is" : "facilities are"} offline without power. Extend the grid with substations.</div>}
+        <div>Generation {state.power.generation.toFixed(1)} MW · Demand {state.power.demand.toFixed(1)} MW · Supplied {state.power.supplied.toFixed(1)} MW</div>
+        <div>Supplied facilities: {powerUsers - disconnected - blackouts}/{powerUsers} requiring electricity</div>
+        {disconnected > 0 && <div role="status">{disconnected} {disconnected === 1 ? "facility is" : "facilities are"} outside grid coverage. Extend the grid with substations.</div>}
+        {blackouts > 0 && <div role="status">{blackouts} {blackouts === 1 ? "facility has" : "facilities have"} rolling blackouts. Add engineers or connected power plants. Supply priority rotates monthly.</div>}
+        {state.power.grids.map((grid, index) => <div key={index}>Grid {index + 1}: {grid.generation.toFixed(1)} MW generation / {grid.demand.toFixed(1)} MW demand / {grid.supplied.toFixed(1)} MW supplied</div>)}
       </div>
       <div className="almanac__section">
         <strong>Island</strong>
