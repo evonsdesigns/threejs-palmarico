@@ -121,7 +121,7 @@ Dimensions are in tiles (W×L) along the orthogonal grid axes. Buildings marked
 | Casino | 3×4 | High-profit gambling entertainment. |
 | Conservatory (PI) | 3×4 | High-end cultural entertainment. |
 | El Prez' Childhood Home (PI) | 3×3 | Generates tourism and loyalty; one per island. |
-| Sports Complex | 4×5 | Large-capacity entertainment venue. |
+| Sports Complex | 4×6 | Enclosed rounded arena with layered dark roofs, turquoise arcades and four decorative towers. |
 | Archaeological Site | 4×4 | Must be placed directly over ancient ruins. |
 
 ### Tourism (Accommodations and Attractions)
