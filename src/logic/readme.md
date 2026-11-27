@@ -4,10 +4,29 @@
 `building-effects.ts` is the typed per-building mechanics registry; `island.ts` contains pure ratings,
 faction, and relation helpers (`calculateIsland`, `relationLabel`, `atLeast`).
 
-The snapshot exposes `buildingStaffing`, `buildingIncome`, `goods`, `powered`, `ratings`, `educated`,
+The snapshot exposes `buildingStaffing`, `buildingOperation`, `buildingIncome`, `goods`, `powered`, `ratings`, `educated`,
 `factions`, `superpowers`, `tourists`, `tourismIncome`, `military`, `police`, `jailCapacity`, `rebels`,
 `nextElectionYear`, `gameOver`, `activeEdicts`, `edictCooldowns`, `issuedOnce`, and `jailUsed`. `missingRequirement(type, state)` serves the construction menu and
 `buildingCost(type, state)` includes construction-office discounts and active edict price modifiers. `game.issueEdict(id)` / `game.cancelEdict(id)` return `null` on success or an explanatory error string; active effects, expiry, cooldown and once-only state are in the snapshot.
+
+## Electricity
+
+Staffed power plants supply a 24-tile radius. A substation inside a live plant's
+or substation's coverage extends the grid by another 10 tiles; chains work in
+any placement order, but disconnected loops cannot generate electricity.
+Closed or unstaffed plants and closed substations cannot supply the network.
+
+`buildingStaffing` tracks allocated workers. `buildingOperation` tracks the
+operating fraction: buildings marked `needsPower` operate at zero without
+coverage, retaining their staff and normal staffed upkeep. Their services,
+entertainment income, tourist beds and attractions stop until electricity returns.
+Colleges and cathedrals do not require electricity; substations require a power plant
+before construction. See the [official manual](../../docs/tropico1_manual_en.pdf),
+Appendix A (PDF pages 29–30), and the [strategy guide](../../docs/manual.md),
+infrastructure and human-services sections. Ordinary buildings and optional powered bonuses retain
+their existing behavior. Building details and the almanac report outages.
+Coverage radii are existing Palmarico balance values, not verified original-game
+distances. Megawatt production, demand and overloads are not yet modeled.
 
 ## Edict integration hooks
 

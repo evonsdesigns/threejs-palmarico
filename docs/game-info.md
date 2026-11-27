@@ -71,11 +71,11 @@ Dimensions are in tiles (W×L) along the orthogonal grid axes. Buildings marked
 | Building | Tiles | Notes |
 | --- | --- | --- |
 | Road | 1×1 | Per individual tile segment. |
-| Electric Substation | 1×1 | Extends the power grid radius without generating power. |
+| Electric Substation | 1×1 | Extends a live power grid by 10 tiles; can chain from other connected substations but cannot generate power. |
 | Construction Office | 2×3 | Houses construction builders. |
 | Teamster's Office | 2×3 | Houses transport workers. |
 | Bank | 3×3 | Generates interest/slush funds or lowers building costs. |
-| Electric Power Plant | 4×5 | Generates electricity for nearby grid tiles and substations. |
+| Electric Power Plant | 4×5 | Staffed college engineers supply a 24-tile radius. Power-dependent facilities stop operating without coverage, retaining staff and upkeep. |
 | Dock | 4×6 | Coastal; handles imports, exports and immigrants. |
 | Airport | 6×12 | Largest standard footprint; requires a long, flat stretch of land. |
 
@@ -196,3 +196,17 @@ The island is a height field on the same tile grid as the buildings
   dense in jungle, scattered on grass and sand. Construction crews clear trees from a building's footprint;
   automatically built shacks and starting buildings stay on open ground.
 - **Overlays:** G toggles the 1×1 tile grid and C the yellow 8×8 macro grid.
+
+## Electricity in Palmarico
+
+Staffed power plants cover 24 tiles; connected substations extend coverage by
+10 tiles and can be chained. Substations require an existing plant and do not
+generate electricity. Facilities marked as requiring power stop services and
+income during an outage, retaining workers and upkeep, and resume automatically
+when reconnected. Colleges and cathedrals do not require power.
+
+These dependencies follow the official manual's construction guidance and
+Appendix A (PDF pages 15, 29–30), cross-checked against the strategy guide's
+infrastructure and human-services sections. Coverage distances are Palmarico's
+current balance values. Generation capacity, megawatt demand and overload
+blackouts described by the sources are not yet simulated.

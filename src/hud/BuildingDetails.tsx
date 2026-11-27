@@ -12,6 +12,8 @@ const BuildingDetails: React.FC = () => {
   const effect = buildingEffects[building.type];
   const producedGood = buildingProducedGood(building);
   const educationName = effect.education === "high-school" ? "High school" : effect.education === "college" ? "College" : "None";
+  const operation = state.buildingOperation[index];
+  const closed = state.modifiers.closedBuildingTypes.includes(building.type);
 
   return (
     <section className="building-details" aria-label="Building details">
@@ -23,10 +25,18 @@ const BuildingDetails: React.FC = () => {
       {definition.housing > 0 && <p>Housing: {definition.housing}</p>}
       {definition.jobs > 0 && <p>Jobs: {definition.jobs}</p>}
       <p>Staffing: {Math.round((state.buildingStaffing[index] ?? 0) * 100)}% · Education: {educationName}</p>
-      {effect.needsPower && <p>Power: {state.powered[index] ? "Connected" : "Unpowered"}</p>}
+      {(effect.needsPower || building.type === "electric-substation" || building.type === "electric-power-plant") && (
+        <p role={!state.powered[index] && !closed ? "status" : undefined}>
+          Power: {state.powered[index] ? "Connected" : "Disconnected"}.
+          {closed ? "" : building.type === "electric-power-plant" ? (operation > 0 ? " Supplying a 24-tile radius." : " College engineers are needed to generate electricity.")
+            : building.type === "electric-substation" ? (state.powered[index] ? " Extending the grid by 10 tiles." : " Connect to a staffed plant or a live substation.")
+            : !state.powered[index] ? " Operations stopped. Build a staffed power plant or extend its grid with substations. Staff and upkeep are retained." : ""}
+        </p>
+      )}
+      {closed && <p>Operations stopped by edict.</p>}
       <p>Estimated income: ${Math.round(state.buildingIncome[index] ?? 0)}/month gross · upkeep ${buildingUpkeep(building)}/month.</p>
-      {effect.capacity !== undefined && <p>Service capacity: {Math.floor(effect.capacity * (state.buildingStaffing[index] ?? 0))}; quality {effect.quality ?? "standard"}{effect.beauty ? `; beauty +${effect.beauty}` : ""}{effect.pollution ? `; pollution ${effect.pollution}` : ""}.</p>}
-      {effect.beds !== undefined && <p>Tourist beds: {Math.floor(effect.beds * (definition.jobs ? state.buildingStaffing[index] : 1))}; current guests: {state.buildingTourists[index] ?? 0}.</p>}
+      {effect.capacity !== undefined && <p>Service capacity: {Math.floor(effect.capacity * operation)}; quality {effect.quality ?? "standard"}{effect.beauty ? `; beauty +${effect.beauty}` : ""}{effect.pollution ? `; pollution ${effect.pollution}` : ""}.</p>}
+      {effect.beds !== undefined && <p>Tourist beds: {Math.floor(effect.beds * operation)}; current guests: {state.buildingTourists[index] ?? 0}.</p>}
       {(producedGood || effect.consumes) && <p>Goods: {producedGood ? `produces ${producedGood}` : ""}{effect.consumes?.length ? ` uses ${effect.consumes.join(", ")}` : ""}. Island production — {Object.entries(state.goods).filter(([, values]) => values.produced || values.processed).map(([good, values]) => `${good}: ${values.produced.toFixed(1)} produced, ${values.processed.toFixed(1)} processed`).join("; ") || "none"}</p>}
       {building.type === "mine" && (
         <>

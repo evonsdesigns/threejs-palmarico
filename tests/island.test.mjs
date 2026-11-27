@@ -94,6 +94,105 @@ test("power plant radius and connected substations extend coverage", () => {
   assert.equal(state.powered[index("tv-station")], false);
 });
 
+function powerIsland() {
+  const priority = ["electric-power-plant", "hospital", "college", "radio-station", "luxury-hotel", "sports-complex"];
+  const ordered = [...priority, ...buildings.map(({ id }) => id).filter((id) => !priority.includes(id))];
+  const game = new GameState();
+  game.initializeShowcase(ordered.map((type, index) => ({
+    type,
+    x: type === "electric-power-plant" ? 0 : type === "electric-substation" ? 96 : priority.includes(type) ? 176 : 10000 + index * 40,
+    z: 0,
+  })));
+  const index = (type) => game.getSnapshot().placed.findIndex((building) => building.type === type);
+  return { game, index };
+}
+
+test("substation chains reach their exact radius and disconnect when a relay closes", () => {
+  const { game, index } = powerIsland();
+  assert.equal(game.getSnapshot().powered[index("hospital")], false);
+  assert.equal(game.place("electric-substation", 136, 0), true);
+  let state = game.getSnapshot();
+  assert.equal(state.powered[index("hospital")], true, "24 + 10 + 10 tiles should reach 176 world units");
+  assert.equal(state.powered[index("college")], true);
+  assert.ok(state.buildingOperation[index("hospital")] > 0);
+
+  game.setSimulationModifiers({ closedBuildingTypes: ["electric-substation"] });
+  state = game.getSnapshot();
+  assert.equal(state.powered[index("hospital")], false);
+  assert.equal(state.buildingOperation[index("hospital")], 0);
+  game.setSimulationModifiers({ closedBuildingTypes: [] });
+  assert.equal(game.getSnapshot().powered[index("hospital")], true);
+});
+
+test("substation chains work in reverse placement order but isolated loops cannot supply power", () => {
+  const { game, index } = powerIsland();
+  // The farther relay is visited before the nearer one.
+  const placed = game.getSnapshot().placed.map((building) => building.type === "electric-substation"
+    ? { ...building, x: 136 } : { ...building });
+  const reversed = new GameState();
+  reversed.initializeShowcase(placed);
+  assert.equal(reversed.getSnapshot().powered[index("hospital")], false);
+  assert.equal(reversed.place("electric-substation", 96, 0), true);
+  assert.equal(reversed.getSnapshot().powered[index("hospital")], true);
+  reversed.setSimulationModifiers({ closedBuildingTypes: ["electric-power-plant"] });
+  assert.equal(reversed.getSnapshot().powered[index("hospital")], false);
+  assert.equal(reversed.getSnapshot().powered[index("electric-substation")], false);
+  reversed.setSimulationModifiers({ closedBuildingTypes: [] });
+  assert.equal(reversed.getSnapshot().powered[index("hospital")], true);
+});
+
+test("outages stop services, entertainment revenue and tourist rooms without dismissing workers", () => {
+  const { game, index } = powerIsland();
+  const offline = game.getSnapshot();
+  for (const type of ["hospital", "radio-station", "luxury-hotel", "sports-complex"]) {
+    assert.ok(offline.buildingStaffing[index(type)] > 0, `${type} should have workers`);
+    assert.equal(offline.buildingOperation[index(type)], 0);
+    assert.equal(offline.buildingIncome[index(type)], 0);
+  }
+  assert.equal(offline.buildingTourists[index("luxury-hotel")], 0);
+  assert.equal(game.place("electric-substation", 136, 0), true);
+  const online = game.getSnapshot();
+  for (const type of ["hospital", "college", "radio-station", "luxury-hotel", "sports-complex"]) {
+    assert.equal(online.buildingStaffing[index(type)], offline.buildingStaffing[index(type)]);
+    assert.ok(online.buildingOperation[index(type)] > 0);
+  }
+  assert.ok(online.ratings.health > offline.ratings.health);
+  assert.ok(online.ratings.education > offline.ratings.education);
+  assert.ok(online.ratings.media > offline.ratings.media);
+  assert.ok(online.buildingIncome[index("sports-complex")] > 0);
+  assert.ok(online.buildingTourists[index("luxury-hotel")] > 0);
+  game.setSimulationModifiers({ closedBuildingTypes: ["electric-power-plant"] });
+  assert.equal(game.getSnapshot().buildingIncome[index("sports-complex")], 0);
+  assert.equal(game.getSnapshot().buildingTourists[index("luxury-hotel")], 0);
+});
+
+test("colleges and cathedrals operate without electricity, including during a plant shutdown", () => {
+  const { game, index } = powerIsland();
+  const before = game.getSnapshot();
+  for (const type of ["college", "cathedral"]) {
+    assert.equal(before.powered[index(type)], false);
+    assert.ok(before.buildingOperation[index(type)] > 0);
+  }
+  game.advanceMonth();
+  assert.ok(game.getSnapshot().educated.college > before.educated.college);
+  game.setSimulationModifiers({ closedBuildingTypes: ["electric-power-plant"] });
+  const shutdown = game.getSnapshot();
+  game.advanceMonth();
+  assert.ok(game.getSnapshot().educated.college > shutdown.educated.college);
+});
+
+test("a plant without college engineers cannot energize substations", () => {
+  const { game } = powerIsland();
+  const placed = [...game.getSnapshot().placed].sort((a, b) =>
+    Number(a.type === "electric-power-plant") - Number(b.type === "electric-power-plant"));
+  const unstaffed = new GameState();
+  unstaffed.initializeShowcase(placed);
+  const state = unstaffed.getSnapshot();
+  const plant = placed.findIndex((building) => building.type === "electric-power-plant");
+  assert.equal(state.buildingStaffing[plant], 0);
+  assert.ok(state.powered.every((powered) => !powered));
+});
+
 test("tourist beds produce no visitors without a staffed gateway", () => {
   const game = new GameState();
   assert.equal(game.place("bungalow", 0, 0), true);
@@ -153,6 +252,8 @@ test("construction offices discount placement costs and prerequisites are enforc
   assert.equal(game.getSnapshot().money, 1620);
 
   const blocked = new GameState();
+  assert.equal(blocked.place("electric-substation", 0, 0), false);
+  assert.match(blocked.getSnapshot().notice, /Requires a Electric Power Plant/);
   assert.equal(blocked.place("hospital", 0, 0), false);
   assert.match(blocked.getSnapshot().notice, /Requires a Clinic/);
   assert.equal(blocked.place("beach-site", 20, 0), false);

@@ -1,6 +1,7 @@
 import React, { useSyncExternalStore } from "react";
 import { game } from "../logic/game";
 import { factionIds, relationLabel } from "../logic/island";
+import { buildingEffects } from "../logic/building-effects";
 
 const labels: Record<string, string> = {
   health: "Health", religion: "Religion", entertainment: "Entertainment", education: "Education",
@@ -9,6 +10,10 @@ const labels: Record<string, string> = {
 
 const Almanac: React.FC = () => {
   const state = useSyncExternalStore(game.subscribe, game.getSnapshot);
+  const powerUsers = state.placed.filter((building) => buildingEffects[building.type].needsPower
+    && !state.modifiers.closedBuildingTypes.includes(building.type)).length;
+  const disconnected = state.placed.filter((building, index) => buildingEffects[building.type].needsPower
+    && !state.modifiers.closedBuildingTypes.includes(building.type) && !state.powered[index]).length;
   return (
     <section aria-label="Island almanac" className="almanac">
       <div className="almanac__ratings">
@@ -27,6 +32,12 @@ const Almanac: React.FC = () => {
       <div className="almanac__section">
         <strong>Foreign relations</strong>
         <div>U.S. {Math.round(state.superpowers.us)} ({relationLabel(state.superpowers.us)}) · U.S.S.R. {Math.round(state.superpowers.ussr)} ({relationLabel(state.superpowers.ussr)})</div>
+      </div>
+      <div className="almanac__section">
+        <strong>Electricity</strong>
+        <div>Active power plants: {state.placed.filter((building, index) => building.type === "electric-power-plant" && state.buildingOperation[index] > 0).length}</div>
+        <div>Connected facilities: {powerUsers - disconnected}/{powerUsers} requiring electricity</div>
+        {disconnected > 0 && <div role="status">{disconnected} {disconnected === 1 ? "facility is" : "facilities are"} offline without power. Extend the grid with substations.</div>}
       </div>
       <div className="almanac__section">
         <strong>Island</strong>

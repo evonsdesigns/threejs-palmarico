@@ -1,4 +1,4 @@
-import { footprintAt, rotatedTiles, type GridFootprint, type Rotation } from "./grid";
+import { GRID_TILE_SIZE, footprintAt, rotatedTiles, type GridFootprint, type Rotation } from "./grid";
 import { buildingEffects, type Good } from "./building-effects";
 import { calculateIsland, defaultIslandModifiers, type FactionStateMap, type IslandModifiers, type IslandRatings } from "./island";
 import { combineEdictModifiers, currentMonthIndex, edictDefinitions, edictCost, edictUnavailableReason, type EdictId } from "./edicts";
@@ -109,7 +109,7 @@ export const buildings: BuildingDefinition[] = [
   { id: "logging-camp", name: "Logging Camp", icon: "⛏", cost: 1500, upkeep: 40, jobs: 8, housing: 0, food: 0, revenue: 0, tiles: [2, 2], description: "Eight lumberjacks fell nearby trees for logs; hurts island beauty." },
   { id: "mine", name: "Mine", icon: "⛏", cost: 3000, upkeep: 70, jobs: 8, housing: 0, food: 0, revenue: 0, tiles: [3, 3], description: "Eight miners extract gold, iron or bauxite for export; gold can be made into jewelry." },
   { id: "fishermans-wharf", name: "Fisherman's Wharf", icon: "⛏", cost: 3000, upkeep: 60, jobs: 4, housing: 0, food: 18, revenue: 0, tiles: [4, 3], description: "Four fishermen bring in fish that feeds 18 people; surplus goes to the cannery. Must be built on the shore.", coastal: true },
-  { id: "electric-substation", name: "Electric Substation", icon: "⚡", cost: 2000, upkeep: 20, jobs: 0, housing: 0, food: 0, revenue: 0, tiles: [1, 1], description: "Extends power from a nearby power plant by 10 tiles. Needs no staff." },
+  { id: "electric-substation", name: "Electric Substation", icon: "⚡", cost: 2000, upkeep: 20, jobs: 0, housing: 0, food: 0, revenue: 0, tiles: [1, 1], description: "Extends a connected power grid by 10 tiles. Chain substations to reach distant buildings. Needs no staff." },
   { id: "construction-office", name: "Construction Office", icon: "⚡", cost: 1000, upkeep: 40, jobs: 8, housing: 0, food: 0, revenue: 0, tiles: [3, 2], description: "Eight laborers build the island's projects; each staffed office cuts building costs 5% (up to 15%)." },
   { id: "bank", name: "Bank", icon: "⚡", cost: 8000, upkeep: 120, jobs: 5, housing: 0, food: 0, revenue: 0, tiles: [3, 3], description: "Five college bankers earn interest on the treasury and enable the Bribe and Special Building Permit edicts." },
   { id: "electric-power-plant", name: "Electric Power Plant", icon: "⚡", cost: 17000, upkeep: 300, jobs: 6, housing: 0, food: 0, revenue: 0, tiles: [5, 4], description: "Six college engineers generate electricity for buildings within 24 tiles. Pollutes." },
@@ -129,8 +129,8 @@ export const buildings: BuildingDefinition[] = [
   { id: "church", name: "Church", icon: "✚", cost: 6000, upkeep: 60, jobs: 4, housing: 0, food: 0, revenue: 0, tiles: [4, 3], description: "Four high-school priests serve the faithful (quality 60)." },
   { id: "high-school", name: "High School", icon: "✚", cost: 8000, upkeep: 100, jobs: 6, housing: 0, food: 0, revenue: 0, tiles: [4, 3], description: "Six high-school teachers educate 12 students to high-school level." },
   { id: "hospital", name: "Hospital", icon: "✚", cost: 12000, upkeep: 200, jobs: 4, housing: 0, food: 0, revenue: 0, tiles: [4, 4], description: "Four college doctors provide high-quality healthcare (quality 90). Needs a clinic and power." },
-  { id: "college", name: "College", icon: "✚", cost: 12000, upkeep: 200, jobs: 8, housing: 0, food: 0, revenue: 0, tiles: [4, 4], description: "Eight college professors educate 16 high-school graduates to college level. Needs a high school and power." },
-  { id: "cathedral", name: "Cathedral", icon: "✚", cost: 20000, upkeep: 200, jobs: 4, housing: 0, food: 0, revenue: 0, tiles: [6, 4], description: "Four high-school bishops serve the faithful with the island's best religious service (quality 95). Needs a church and power." },
+  { id: "college", name: "College", icon: "✚", cost: 12000, upkeep: 200, jobs: 8, housing: 0, food: 0, revenue: 0, tiles: [4, 4], description: "Eight college professors educate 16 high-school graduates to college level. Needs a high school; electricity is not required." },
+  { id: "cathedral", name: "Cathedral", icon: "✚", cost: 20000, upkeep: 200, jobs: 4, housing: 0, food: 0, revenue: 0, tiles: [6, 4], description: "Four high-school bishops serve the faithful with the island's best religious service (quality 95). Needs a church; electricity is not required." },
   { id: "gourmet-restaurant", name: "Gourmet Restaurant", icon: "♫", cost: 3000, upkeep: 80, jobs: 4, housing: 0, food: 0, revenue: 0, tiles: [3, 2], description: "Four cooks serve 12 diners upscale meals (quality 80). Needs a restaurant and power." },
   { id: "cabaret", name: "Cabaret", icon: "♫", cost: 4000, upkeep: 80, jobs: 3, housing: 0, food: 0, revenue: 0, tiles: [3, 3], description: "Three showgirls entertain 9 visitors (quality 60)." },
   { id: "movie-theater", name: "Movie Theater", icon: "♫", cost: 3500, upkeep: 70, jobs: 3, housing: 0, food: 0, revenue: 0, tiles: [3, 3], description: "Three ushers show films to 16 visitors (quality 50). Needs power." },
@@ -255,6 +255,8 @@ export interface GameSnapshot {
   immigrationOption: ImmigrationOption;
   educated: { highSchool: number; college: number };
   buildingStaffing: number[];
+  /** Operating fraction after staffing, edict closures and required electricity. */
+  buildingOperation: number[];
   buildingIncome: number[];
   goods: Record<Good, { produced: number; processed: number }> ;
   powered: boolean[];
@@ -323,24 +325,26 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
     collegeWorkers = Math.max(0, collegeWorkers - assigned);
   });
 
-  const powered = placed.map((building) => {
-    const x = building.x / 4;
-    const z = building.z / 4;
-    return placed.some((plant, i) => {
-      if (plant.type !== "electric-power-plant" || buildingStaffing[i] <= 0) return false;
-      const plantX = plant.x / 4;
-      const plantZ = plant.z / 4;
-      const distance = Math.hypot(x - plantX, z - plantZ);
-      if (distance <= 24) return true;
-      return placed.some((substation) => substation.type === "electric-substation"
-        && Math.hypot(substation.x / 4 - plantX, substation.z / 4 - plantZ) <= 24
-        && Math.hypot(x - substation.x / 4, z - substation.z / 4) <= 10);
+  const suppliers = placed.flatMap((building, index) => building.type === "electric-power-plant" && buildingStaffing[index] > 0
+    ? [{ building, radius: 24 * GRID_TILE_SIZE }] : []);
+  const connectedSubstations = new Set<number>();
+  for (let source = 0; source < suppliers.length; source++) {
+    const { building: supply, radius } = suppliers[source];
+    placed.forEach((building, index) => {
+      if (building.type !== "electric-substation" || buildingStaffing[index] <= 0 || connectedSubstations.has(index)) return;
+      if (Math.hypot(building.x - supply.x, building.z - supply.z) > radius) return;
+      connectedSubstations.add(index);
+      suppliers.push({ building, radius: 10 * GRID_TILE_SIZE });
     });
-  });
+  }
+  const powered = placed.map((building) => suppliers.some(({ building: supply, radius }) =>
+    Math.hypot(building.x - supply.x, building.z - supply.z) <= radius));
+  const buildingOperation = buildingStaffing.map((staff, index) =>
+    buildingEffects[placed[index].type].needsPower && !powered[index] ? 0 : staff);
 
   const goods = Object.fromEntries(goodNames.map((good) => [good, { produced: 0, processed: 0 }])) as Record<Good, { produced: number; processed: number }>;
   placed.forEach((building, index) => {
-    const amount = buildingStaffing[index];
+    const amount = buildingOperation[index];
     if (building.type === "farm") goods[building.crop ?? "corn"].produced += amount;
     const produced = buildingProducedGood(building);
     if (produced) goods[produced].produced += amount;
@@ -351,7 +355,7 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
     const building = placed[index];
     const effect = buildingEffects[building.type];
     if (!factoryTypes.includes(building.type) || !effect.consumes || !effect.valueAdded) return;
-    let loads = buildingStaffing[index] * 2;
+    let loads = buildingOperation[index] * 2;
     let processed = 0;
     for (const input of effect.consumes) {
       const quantity = Math.min(stock[input], loads);
@@ -408,14 +412,14 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
       diners -= restaurantVisitors[index];
     });
 
-  const island = calculateIsland({ placed, population, jobs, buildingStaffing, powered, educated, modifiers, money, superpowers, food: staffedFood });
+  const island = calculateIsland({ placed, population, jobs, buildingStaffing: buildingOperation, powered, educated, modifiers, money, superpowers, food: staffedFood });
   const hasReligiousBuilding = placed.some((building) => building.type === "church" || building.type === "cathedral");
   const hasSchool = placed.some((building) => building.type === "high-school" || building.type === "college");
-  const newEntertainmentCount = placed.reduce((sum, building, index) => sum + (entertainmentTypes.includes(building.type) ? buildingStaffing[index] : 0), 0);
+  const newEntertainmentCount = placed.reduce((sum, building, index) => sum + (entertainmentTypes.includes(building.type) ? buildingOperation[index] : 0), 0);
   const mediaBonus = Math.min(4, island.media / 20 * 2);
   const approvalModifiers = (hasReligiousBuilding ? island.ratings.religion / 100 * 8 : 0)
     + Math.min(6, newEntertainmentCount * 1.5)
-    + (placed.some((building, i) => building.type === "hospital" && buildingStaffing[i] > 0) ? 5 : 0)
+    + (placed.some((building, i) => building.type === "hospital" && buildingOperation[i] > 0) ? 5 : 0)
     + (hasSchool ? island.ratings.education / 100 * 4 : 0)
     + mediaBonus
     + Math.min(4, island.beauty / 5)
@@ -430,7 +434,7 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
   const pubRevenue = pubVisitors.reduce((sum, visitors) => sum + visitors * pubCharge, 0);
   const restaurantRevenue = restaurantVisitors.reduce((sum, visitors) => sum + visitors * restaurantCharge, 0);
   const buildingIncome = placed.map((building, index) => {
-    let gross = production[index].revenue * buildingStaffing[index] * (building.type === "farm" ? modifiers.exportPriceMultiplier : 1);
+    let gross = production[index].revenue * buildingOperation[index] * (building.type === "farm" ? modifiers.exportPriceMultiplier : 1);
     if (building.type === "farm" || building.type === "logging-camp" || building.type === "mine") gross *= 1 + dockBonus;
     if (building.type === "farm" || building.type === "ranch") gross *= 1 + haulingBonus;
     if (building.type === "pub") gross += pubVisitors[index] * pubCharge;
@@ -440,15 +444,15 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
     if (building.type === "logging-camp" || building.type === "mine" || building.type === "fishermans-wharf") {
       const produced = buildingProducedGood(building);
       if (!produced) throw new Error(`Missing produced good for ${building.type}.`);
-      gross += buildingStaffing[index] * (rawPrices[produced] ?? 0) * (building.type === "logging-camp" || building.type === "mine" ? 1 + dockBonus : 1) * modifiers.exportPriceMultiplier;
+      gross += buildingOperation[index] * (rawPrices[produced] ?? 0) * (building.type === "logging-camp" || building.type === "mine" ? 1 + dockBonus : 1) * modifiers.exportPriceMultiplier;
     }
-    if (building.type === "fishermans-wharf") gross += buildingStaffing[index] * 18 * 8;
+    if (building.type === "fishermans-wharf") gross += buildingOperation[index] * 18 * 8;
     if (building.type === "market") gross += production[index].revenue * staffing;
-    if (entertainmentTypes.includes(building.type)) gross += Math.min(population, (buildingEffects[building.type].capacity ?? 0) * buildingStaffing[index]) * 8;
+    if (entertainmentTypes.includes(building.type)) gross += Math.min(population, (buildingEffects[building.type].capacity ?? 0) * buildingOperation[index]) * 8;
     return gross;
   });
   const touristsHaveGateway = placed.some((building, i) => (building.type === "dock" || building.type === "airport") && buildingStaffing[i] > 0);
-  const totalBeds = placed.reduce((sum, building, i) => sum + (buildingEffects[building.type].beds ?? 0) * (defs[i].jobs ? buildingStaffing[i] : 1), 0);
+  const totalBeds = placed.reduce((sum, building, i) => sum + (buildingEffects[building.type].beds ?? 0) * buildingOperation[i], 0);
   const gateway = placed.reduce((sum, building, i) => sum + (building.type === "airport" ? 30 * buildingStaffing[i] : building.type === "dock" ? 8 * buildingStaffing[i] : 0), 0);
   const tourists = touristsHaveGateway ? Math.min(Math.floor(totalBeds), Math.round(gateway * island.ratings.tourism / 100)) : 0;
   let remainingTourists = tourists;
@@ -457,12 +461,12 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
   placed.forEach((building, index) => {
     const beds = buildingEffects[building.type].beds ?? 0;
     if (!beds || remainingTourists <= 0) return;
-    const accommodated = Math.min(remainingTourists, Math.ceil(beds * (defs[index].jobs ? buildingStaffing[index] : 1)));
+    const accommodated = Math.min(remainingTourists, Math.ceil(beds * buildingOperation[index]));
     buildingTourists[index] = accommodated;
     tourismIncome += accommodated * (buildingEffects[building.type].bedRate ?? 0) * (powered[index] && (building.type === "hotel" || building.type === "luxury-hotel") ? 1.1 : 1);
     remainingTourists -= accommodated;
   });
-  const availableSpend = tourists * Math.min(20, touristAttractions.reduce((sum, type) => sum + (placed.some((item) => item.type === type) ? 2 : 0), 0));
+  const availableSpend = tourists * Math.min(20, touristAttractions.reduce((sum, type) => sum + (placed.some((item, index) => item.type === type && buildingOperation[index] > 0) ? 2 : 0), 0));
   tourismIncome = (tourismIncome + availableSpend) * modifiers.tourismIncomeMultiplier;
   buildingTourists.forEach((visitors, index) => {
     if (visitors) buildingIncome[index] += visitors * (buildingEffects[placed[index].type].bedRate ?? 0) * (powered[index] && (placed[index].type === "hotel" || placed[index].type === "luxury-hotel") ? 1.1 : 1) * modifiers.tourismIncomeMultiplier;
@@ -492,7 +496,7 @@ function calculate(placed: PlacedBuilding[], population: number, educated = { hi
     }, 0));
   return {
     housing, food: staffedFood, jobs, approval, balance, pubVisitors, pubStaffedCapacity,
-    restaurantVisitors, restaurantStaffedCapacity, haulingBonus, buildingStaffing, buildingIncome,
+    restaurantVisitors, restaurantStaffedCapacity, haulingBonus, buildingStaffing, buildingOperation, buildingIncome,
     goods, powered, ratings: island.ratings, factions: island.factions, military: island.military,
     police: placed.reduce((sum, building, i) => sum + (building.type === "police-station" ? buildingStaffing[i] * 6 : 0), 0),
     jailCapacity: island.jailCapacity, tourists, buildingTourists, tourismIncome, educated, modifiers,
@@ -842,7 +846,7 @@ export class GameState {
     if (this.state.paused || this.state.gameOver) return;
     const { placed, population, month, year } = this.state;
     const current = calculate(placed, population, this.state.educated, this.state.modifiers, this.state.money, this.state.superpowers);
-    const staffed = (type: BuildingType) => placed.reduce((sum, building, i) => sum + (building.type === type ? current.buildingStaffing[i] : 0), 0);
+    const staffed = (type: BuildingType) => placed.reduce((sum, building, i) => sum + (building.type === type ? current.buildingOperation[i] : 0), 0);
     const highSchoolGraduates = Math.min(Math.max(0, population - this.state.educated.highSchool - this.state.educated.college), staffed("high-school") * 2 * this.state.modifiers.educationMultiplier);
     const collegeGraduates = Math.min(this.state.educated.highSchool + highSchoolGraduates, staffed("college") * this.state.modifiers.educationMultiplier);
     const nextEducated = {
