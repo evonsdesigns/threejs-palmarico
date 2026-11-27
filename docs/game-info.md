@@ -135,7 +135,7 @@ Dimensions are in tiles (W×L) along the orthogonal grid axes. Buildings marked
 | Beach Villa (PI) | 2×3 | Beachfront tourist accommodation. |
 | Pool | 2×3 | Tourist attraction. |
 | Spa | 2×3 | Luxury tourist attraction. |
-| Tennis Court (PI) | 2×3 | Tourist sports attraction. |
+| Tennis Court (PI) | 4×4 | Square twin-court complex with a steep-gabled clubhouse; enlarged in Palmarico to match the reference layout. |
 | Beach Site | 3×3 | Must be placed on sand tiles along the shore. |
 | Cheap Motel | 3×3 | Budget tourist accommodation. |
 | Marina (PI) | 3×4 | Coastal; yachting attraction. |
